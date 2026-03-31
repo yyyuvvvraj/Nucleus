@@ -7,7 +7,12 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     enrollment_number: { type: String, required: true, unique: true },
     branch: { type: String, required: true },
-    semester: { type: Number, required: true }
+    semester: { type: Number, required: true },
+    // Voice authentication fields
+    voice_enrolled: { type: Boolean, default: false },
+    voice_embeddings: { type: [[Number]], default: [] }, // Array of MFCC feature vectors
+    voice_threshold: { type: Number, default: 0.85 },
+    voice_updated_at: { type: Date }
 }, {
     timestamps: true
 });

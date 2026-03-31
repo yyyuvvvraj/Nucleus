@@ -12,6 +12,7 @@ const Sidebar = () => {
     { name: 'Hostel', path: '/hostel', icon: 'hotel' },
     { name: 'Mess Menu', path: '/mess', icon: 'restaurant' },
     { name: 'Complaints', path: '/complaints', icon: 'report_problem' },
+    { name: 'Voice ID', path: '/voice-enroll', icon: 'mic' },
   ];
 
   return (

@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const voiceAuthRoutes = require('./routes/voiceAuthRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const timetableRoutes = require('./routes/timetableRoutes');
 const resultRoutes = require('./routes/resultRoutes');
@@ -21,6 +22,7 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/voice', voiceAuthRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/results', resultRoutes);
@@ -31,5 +33,5 @@ app.get('/', (req, res) => {
     res.send('Nucleus Student Portal API is running!');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Changed from 5000 to avoid conflict
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

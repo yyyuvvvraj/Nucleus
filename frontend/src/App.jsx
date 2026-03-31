@@ -7,6 +7,7 @@ import Results from './pages/Results';
 import Hostel from './pages/Hostel';
 import MessMenu from './pages/MessMenu';
 import Complaints from './pages/Complaints';
+import VoiceEnroll from './pages/VoiceEnroll';
 
 const ComingSoon = ({ title }) => <div className="p-8 text-2xl font-bold text-gray-300">{title} Module Coming Soon</div>;
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="hostel" element={<Hostel />} />
           <Route path="mess" element={<MessMenu />} />
           <Route path="complaints" element={<Complaints />} />
+          <Route path="voice-enroll" element={<VoiceEnroll />} />
         </Route>
       </Routes>
     </Router>
