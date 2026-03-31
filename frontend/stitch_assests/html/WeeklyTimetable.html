@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#ddc39d",
+              "surface-container-high": "#e6e8ea",
+              "surface-bright": "#f7f9fb",
+              "error-container": "#ffdad6",
+              "surface-dim": "#d8dadc",
+              "on-secondary-fixed-variant": "#003ea8",
+              "inverse-on-surface": "#eff1f3",
+              "on-secondary": "#ffffff",
+              "on-secondary-container": "#fefcff",
+              "surface-tint": "#545f73",
+              "on-primary-fixed": "#111c2d",
+              "tertiary-container": "#35260c",
+              "on-secondary-fixed": "#00174b",
+              "secondary-fixed-dim": "#b4c5ff",
+              "surface-container-low": "#f2f4f6",
+              "on-primary-fixed-variant": "#3c475a",
+              "outline": "#75777d",
+              "surface-container-highest": "#e0e3e5",
+              "on-tertiary-fixed-variant": "#564427",
+              "outline-variant": "#c5c6cd",
+              "on-error-container": "#93000a",
+              "secondary-container": "#316bf3",
+              "surface-container": "#eceef0",
+              "on-surface-variant": "#45474c",
+              "on-tertiary": "#ffffff",
+              "primary-fixed": "#d8e3fb",
+              "tertiary-fixed": "#fadfb8",
+              "on-error": "#ffffff",
+              "primary": "#091426",
+              "secondary-fixed": "#dbe1ff",
+              "primary-container": "#1e293b",
+              "surface": "#f7f9fb",
+              "on-surface": "#191c1e",
+              "inverse-surface": "#2d3133",
+              "secondary": "#0051d5",
+              "inverse-primary": "#bcc7de",
+              "surface-variant": "#e0e3e5",
+              "on-tertiary-fixed": "#271902",
+              "tertiary": "#1e1200",
+              "primary-fixed-dim": "#bcc7de",
+              "background": "#f7f9fb",
+              "on-primary": "#ffffff",
+              "on-primary-container": "#8590a6",
+              "on-tertiary-container": "#a38c6a",
+              "on-background": "#191c1e",
+              "surface-container-lowest": "#ffffff",
+              "error": "#ba1a1a"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .timetable-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(6, 1fr);
+            border-top: 1px solid #c5c6cd33;
+            border-left: 1px solid #c5c6cd33;
+        }
+        .timetable-cell {
+            border-right: 1px solid #c5c6cd33;
+            border-bottom: 1px solid #c5c6cd33;
+            min-height: 100px;
+        }
+        .pillar-blue { border-left: 2px solid #0051d5; }
+        .pillar-slate { border-left: 2px solid #45474c; }
+        .pillar-primary { border-left: 2px solid #091426; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-slate-800 dark:bg-slate-950 flex flex-col z-50">
+<div class="p-6">
+<h1 class="text-xl font-bold text-white tracking-tight">Nucleus</h1>
+<p class="text-xs text-slate-400 font-medium">University ERP</p>
+</div>
+<nav class="flex-1 mt-4">
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-sans text-sm font-medium tracking-tight">Dashboard</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-sans text-sm font-medium tracking-tight">Attendance</span>
+</a>
+<a class="bg-blue-600 text-white rounded-md mx-2 px-4 py-2 flex items-center gap-3 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-sans text-sm font-medium tracking-tight">Timetable</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">grade</span>
+<span class="font-sans text-sm font-medium tracking-tight">Results</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-sans text-sm font-medium tracking-tight">Courses</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">hotel</span>
+<span class="font-sans text-sm font-medium tracking-tight">Hostel</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">restaurant</span>
+<span class="font-sans text-sm font-medium tracking-tight">Mess Menu</span>
+</a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors hover:bg-slate-700 dark:hover:bg-slate-800 rounded-md" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-sans text-sm font-medium tracking-tight">Complaints</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-700">
+<div class="flex items-center gap-3 px-2">
+<img alt="University Logo" class="w-8 h-8 rounded bg-slate-700 p-1" data-alt="University crest logo with minimalist book and torch symbol in silver on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSqlMKk6UJDC452c7soDuuHJwwFIElcYeGlsdIJI08Yj1WyW096THDlWOgLUSennna5aOLC0qugIshDqH_GVbZCDq0O6BIaxZrS07-_WUpW1Y3BKFKAstYwlYI5hNGnxi7moRIsInOa7qLb7SmPEBVRSP1a8zavLw9kLtmbhUNiUZD08JVufizi9B-29r_DGIDN-Fp1PmhW__q7GBfBbrQKnpvdAiyObdv7b35Tq7oBvwBx7p3eM6WyJP07_TewnYdLB1O7AhXFPpm"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-white truncate">Academic Year 2024</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest">Spring Semester</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar Component -->
+<header class="sticky top-0 z-40 bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-md py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-secondary placeholder:text-on-surface-variant/60" placeholder="Search for courses, rooms, or faculty..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6 ml-8">
+<button class="text-on-surface-variant hover:bg-surface-container rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="flex items-center gap-3 border-l border-slate-200 pl-6">
+<div class="text-right">
+<p class="text-sm font-semibold text-primary leading-none">Rohan Sharma</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter mt-1 font-mono">ID: 2021CS1045</p>
+</div>
+<img alt="User Profile" class="w-9 h-9 rounded-full object-cover" data-alt="Professional headshot of a young male student wearing a white collared shirt against a neutral gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD50wYMDNgYUTXcR0tnOhHEL_0eiu7qGVG6yTzPi3VgbRtS1WJEqOUYm1KqEeCdOWNSndKJhKPJ3hsSljwbvUvUofbL2xyttipDL70W6Wx0VsMZAhVf_twzuGv8pQiCIoLwUuYGXRaQexXAvVVM6SngseVO6Ejfw0pNt8qQRPvPyiIZ6hldUMkrqvRjL4Fqhr7rrcbPZEp5Ul3v5d24KtGI72VteCknmqLXGM3hJ7YAg_RYaG66vJ7SDSY4V9K8fk5RYKExPrhB1WXC"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<main class="flex-1 p-8 bg-surface">
+<!-- Header Section -->
+<div class="mb-10 flex justify-between items-end">
+<div>
+<span class="label-md text-xs font-bold text-secondary uppercase tracking-[0.2em] mb-2 block">Student Schedule</span>
+<h2 class="text-3xl font-bold text-primary tracking-tight font-headline">Weekly Timetable</h2>
+<p class="text-on-surface-variant text-sm mt-1 max-w-md">Your organized academic itinerary for the current semester. All classes are displayed in the local timezone.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-highest text-on-surface px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all hover:bg-surface-dim">
+<span class="material-symbols-outlined text-sm">download</span>
+                        Export PDF
+                    </button>
+<button class="bg-secondary text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-sm">print</span>
+                        Print View
+                    </button>
+</div>
+</div>
+<!-- Timetable Container -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-none border border-outline-variant/20">
+<!-- Days Header -->
+<div class="timetable-grid bg-surface-container-high border-b border-outline-variant/30">
+<div class="timetable-cell flex items-center justify-center bg-surface-container-high h-12">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Time</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">MON</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">TUE</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">WED</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">THU</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">FRI</span>
+</div>
+<div class="timetable-cell flex flex-col items-center justify-center h-12">
+<span class="text-xs font-bold text-primary">SAT</span>
+</div>
+</div>
+<!-- Timetable Body -->
+<!-- 09:00 AM -->
+<div class="timetable-grid">
+<div class="timetable-cell flex items-center justify-center">
+<span class="text-[10px] font-mono font-medium text-on-surface-variant">09:00 AM</span>
+</div>
+<!-- Mon -->
+<div class="timetable-cell p-2">
+<div class="pillar-blue bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-secondary font-bold">CS401</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Algorithms</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Room 302 • Dr. Rao</p>
+</div>
+</div>
+<!-- Tue -->
+<div class="timetable-cell p-2">
+<div class="pillar-slate bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-on-surface-variant font-bold">HS102</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Ethics</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Auditorium B</p>
+</div>
+</div>
+<!-- Wed -->
+<div class="timetable-cell p-2">
+<div class="pillar-blue bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-secondary font-bold">CS401</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Algorithms</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Room 302</p>
+</div>
+</div>
+<!-- Thu -->
+<div class="timetable-cell p-2"></div>
+<!-- Fri -->
+<div class="timetable-cell p-2">
+<div class="pillar-blue bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-secondary font-bold">CS401</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Algorithms</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Room 302</p>
+</div>
+</div>
+<!-- Sat -->
+<div class="timetable-cell p-2"></div>
+</div>
+<!-- 10:30 AM -->
+<div class="timetable-grid">
+<div class="timetable-cell flex items-center justify-center">
+<span class="text-[10px] font-mono font-medium text-on-surface-variant">10:30 AM</span>
+</div>
+<!-- Mon -->
+<div class="timetable-cell p-2"></div>
+<!-- Tue -->
+<div class="timetable-cell p-2">
+<div class="pillar-primary bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-primary font-bold">CS450</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Networks</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Lab 04 • Prof. Gupta</p>
+</div>
+</div>
+<!-- Wed -->
+<div class="timetable-cell p-2">
+<div class="pillar-slate bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-on-surface-variant font-bold">MA201</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Calculus III</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Hall 01</p>
+</div>
+</div>
+<!-- Thu -->
+<div class="timetable-cell p-2">
+<div class="pillar-primary bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-primary font-bold">CS450</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Networks</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Lab 04</p>
+</div>
+</div>
+<!-- Fri -->
+<div class="timetable-cell p-2"></div>
+<!-- Sat -->
+<div class="timetable-cell p-2">
+<div class="pillar-slate bg-surface p-3 rounded-r h-full opacity-60">
+<span class="text-[10px] font-mono text-on-surface-variant font-bold">EXTRA</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Seminar</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Virtual</p>
+</div>
+</div>
+</div>
+<!-- 12:00 PM - BREAK -->
+<div class="timetable-grid bg-surface-container-low border-y border-outline-variant/10">
+<div class="timetable-cell flex items-center justify-center h-10 border-r-0">
+<span class="text-[10px] font-mono font-medium text-on-surface-variant">12:00 PM</span>
+</div>
+<div class="col-span-6 flex items-center justify-center">
+<span class="text-[10px] uppercase tracking-[0.4em] font-bold text-on-surface-variant/40">Lunch Interval &amp; Campus Transit</span>
+</div>
+</div>
+<!-- 01:30 PM -->
+<div class="timetable-grid">
+<div class="timetable-cell flex items-center justify-center">
+<span class="text-[10px] font-mono font-medium text-on-surface-variant">01:30 PM</span>
+</div>
+<!-- Mon -->
+<div class="timetable-cell p-2">
+<div class="pillar-slate bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-on-surface-variant font-bold">MA201</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Calculus III</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Hall 01</p>
+</div>
+</div>
+<!-- Tue -->
+<div class="timetable-cell p-2"></div>
+<!-- Wed -->
+<div class="timetable-cell p-2">
+<div class="pillar-blue bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-secondary font-bold">CS405</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">AI Ethics</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Room 201</p>
+</div>
+</div>
+<!-- Thu -->
+<div class="timetable-cell p-2">
+<div class="pillar-slate bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-on-surface-variant font-bold">MA201</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Calculus III</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Hall 01</p>
+</div>
+</div>
+<!-- Fri -->
+<div class="timetable-cell p-2">
+<div class="pillar-primary bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-primary font-bold">CS450</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Networks</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Lab 04</p>
+</div>
+</div>
+<!-- Sat -->
+<div class="timetable-cell p-2"></div>
+</div>
+<!-- 03:00 PM -->
+<div class="timetable-grid">
+<div class="timetable-cell flex items-center justify-center">
+<span class="text-[10px] font-mono font-medium text-on-surface-variant">03:00 PM</span>
+</div>
+<!-- Mon -->
+<div class="timetable-cell p-2 col-span-1">
+<div class="pillar-primary bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-primary font-bold">PE202</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">Sports Elective</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Main Arena</p>
+</div>
+</div>
+<!-- Tue -->
+<div class="timetable-cell p-2"></div>
+<!-- Wed -->
+<div class="timetable-cell p-2"></div>
+<!-- Thu -->
+<div class="timetable-cell p-2">
+<div class="pillar-blue bg-surface p-3 rounded-r h-full">
+<span class="text-[10px] font-mono text-secondary font-bold">CS405</span>
+<h4 class="text-sm font-bold text-primary leading-tight mt-1">AI Ethics</h4>
+<p class="text-[11px] text-on-surface-variant mt-1">Room 201</p>
+</div>
+</div>
+<!-- Fri -->
+<div class="timetable-cell p-2"></div>
+<!-- Sat -->
+<div class="timetable-cell p-2"></div>
+</div>
+</div>
+<!-- Bottom Insights Grid -->
+<div class="grid grid-cols-12 gap-8 mt-12">
+<div class="col-span-8 bg-surface-container-low p-6 rounded-xl border border-outline-variant/10">
+<h3 class="text-sm font-bold text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">info</span>
+                        Faculty Announcements
+                    </h3>
+<div class="space-y-4">
+<div class="flex items-start gap-4 pb-4 border-b border-outline-variant/20">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary">record_voice_over</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Dr. Rao (Algorithms)</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Monday's lecture shifted to Room 505 for guest presentation.</p>
+<span class="text-[10px] font-mono text-secondary mt-2 block">2 HOURS AGO</span>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary">lab_profile</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-primary">Prof. Gupta (Networks)</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Lab reports for Experiments 4-6 are due by Friday midnight.</p>
+<span class="text-[10px] font-mono text-secondary mt-2 block">YESTERDAY</span>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-4 bg-primary text-white p-6 rounded-xl relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-xs font-bold uppercase tracking-widest text-primary-fixed/60 mb-6">Upcoming Class</h3>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">history_toggle_off</span>
+<span class="text-sm font-mono text-secondary font-bold">Starts in 45m</span>
+</div>
+<h2 class="text-2xl font-bold leading-tight">Advanced Operating Systems</h2>
+<p class="text-primary-fixed/80 text-sm mt-1">Block C, Hall 42 • Prof. Mehta</p>
+<div class="mt-8 flex items-center gap-4">
+<div class="bg-primary-container p-3 rounded-lg border border-white/10">
+<p class="text-[10px] text-primary-fixed/60 uppercase font-bold">Attendance</p>
+<p class="text-xl font-bold">92%</p>
+</div>
+<div class="bg-primary-container p-3 rounded-lg border border-white/10">
+<p class="text-[10px] text-primary-fixed/60 uppercase font-bold">Credits</p>
+<p class="text-xl font-bold">4.0</p>
+</div>
+</div>
+</div>
+<!-- Decorative background element -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/20 rounded-full blur-3xl"></div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
