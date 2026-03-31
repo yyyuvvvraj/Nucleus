@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
+import Results from './pages/Results';
 // Adding basic text pages for rest of requirements to show it works
 const ComingSoon = ({ title }) => <div className="p-8 text-2xl font-bold text-gray-300">{title} Module Coming Soon</div>;
 
@@ -13,7 +14,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="timetable" element={<ComingSoon title="Timetable" />} />
-          <Route path="results" element={<ComingSoon title="Results" />} />
+          <Route path="results" element={<Results />} />
           <Route path="courses" element={<ComingSoon title="Courses" />} />
           <Route path="hostel" element={<ComingSoon title="Hostel" />} />
           <Route path="mess" element={<ComingSoon title="Mess" />} />
