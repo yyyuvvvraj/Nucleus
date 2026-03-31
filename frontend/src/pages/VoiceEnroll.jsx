@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Check, Loader2, AlertCircle, Music, User, ArrowRight, RotateCcw, Sparkles } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function VoiceEnroll() {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -14,29 +12,25 @@ export default function VoiceEnroll() {
   const streamRef = useRef(null);
   const animationRef = useRef(null);
 
-  const [step, setStep] = useState('intro'); // 'intro', 'enroll', 'processing', 'success', 'error'
+  const [step, setStep] = useState('intro');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [recordedBlob, setRecordedBlob] = useState(null);
   const [samples, setSamples] = useState([]);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [error, setError] = useState(null);
   const [enrollmentResult, setEnrollmentResult] = useState(null);
-  const [waveformData, setWaveformData] = useState(new Uint8Array(0));
   const [user, setUser] = useState(null);
 
-  // Check auth on mount
   useEffect(() => {
     const token = localStorage.getItem('nucleusToken');
     const userStr = localStorage.getItem('nucleusUser');
     if (!token || !userStr) {
-      navigate('/');
+      navigate('/login');
       return;
     }
     setUser(JSON.parse(userStr));
   }, [navigate]);
 
-  // Draw waveform
   const drawWaveform = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -52,7 +46,6 @@ export default function VoiceEnroll() {
       const dataArray = new Uint8Array(bufferLength);
       analyserRef.current.getByteFrequencyData(dataArray);
 
-      // Downsample for visualization
       const bars = 64;
       const step = Math.floor(bufferLength / bars);
       const barData = new Uint8Array(bars);
@@ -63,41 +56,35 @@ export default function VoiceEnroll() {
         }
         barData[i] = sum / step;
       }
-      setWaveformData(barData);
 
-      // Clear and draw
-      ctx.fillStyle = 'rgba(99, 102, 241, 0.1)';
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.05)';
       ctx.fillRect(0, 0, width, height);
 
       const barWidth = width / bars;
       const gradient = ctx.createLinearGradient(0, height / 2, 0, 0);
-      gradient.addColorStop(0, '#8b5cf6'); // violet
-      gradient.addColorStop(0.5, '#3b82f6'); // blue
-      gradient.addColorStop(1, '#06b6d4'); // cyan
+      gradient.addColorStop(0, '#3b82f6');
+      gradient.addColorStop(1, '#8b5cf6');
 
       ctx.fillStyle = gradient;
-      ctx.beginPath();
       for (let i = 0; i < bars; i++) {
         const barHeight = (barData[i] / 255) * (height / 2 - 10);
         const x = i * barWidth;
         const y = (height - barHeight) / 2;
+        ctx.beginPath();
         ctx.roundRect(x + 2, y, barWidth - 4, barHeight, 4);
+        ctx.fill();
       }
-      ctx.fill();
     };
 
     draw();
   }, []);
 
-  // Start waveform visualization
   useEffect(() => {
     if (isRecording) {
       drawWaveform();
     } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      // Clear canvas
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -105,13 +92,10 @@ export default function VoiceEnroll() {
       }
     }
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [isRecording, drawWaveform]);
 
-  // Initialize audio context for visualization
   const initAudioContext = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -125,12 +109,10 @@ export default function VoiceEnroll() {
       analyserRef.current = analyser;
       return stream;
     } catch (err) {
-      console.error('Error accessing microphone:', err);
-      throw new Error('Microphone access denied. Please allow microphone access to use voice enrollment.');
+      throw new Error('Microphone access denied. Please allow microphone access.');
     }
   };
 
-  // Start recording
   const startRecording = async () => {
     setError(null);
     try {
@@ -140,18 +122,14 @@ export default function VoiceEnroll() {
 
       const chunks = [];
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
+        if (e.data.size > 0) chunks.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/wav' });
-        setRecordedBlob(blob);
         setSamples(prev => [...prev, blob]);
         setIsRecording(false);
         setRecordingTime(0);
-        // Stop tracks
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -159,12 +137,11 @@ export default function VoiceEnroll() {
       setIsRecording(true);
       setRecordingTime(0);
 
-      // Timer
       const timer = setInterval(() => {
         setRecordingTime(prev => {
           if (prev >= 5) {
             clearInterval(timer);
-            stopRecording();
+            mediaRecorder.stop();
             return prev;
           }
           return prev + 1;
@@ -175,14 +152,6 @@ export default function VoiceEnroll() {
     }
   };
 
-  // Stop recording
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  // Enroll voice samples with backend
   const enrollVoice = async () => {
     setIsEnrolling(true);
     setError(null);
@@ -191,9 +160,7 @@ export default function VoiceEnroll() {
       const token = localStorage.getItem('nucleusToken');
       const userId = user?._id;
 
-      if (!token || !userId) {
-        throw new Error('Authentication required');
-      }
+      if (!token || !userId) throw new Error('Authentication required');
 
       const formData = new FormData();
       samples.forEach((blob, idx) => {
@@ -202,17 +169,13 @@ export default function VoiceEnroll() {
 
       const response = await fetch(`${API_BASE_URL}/api/auth/voice/enroll`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Enrollment failed');
-      }
+      if (!response.ok) throw new Error(data.message || 'Enrollment failed');
 
       setEnrollmentResult(data);
       setStep('success');
@@ -224,26 +187,22 @@ export default function VoiceEnroll() {
     }
   };
 
-  // Reset and start over
   const resetEnrollment = () => {
     setStep('intro');
     setSamples([]);
-    setRecordedBlob(null);
     setEnrollmentResult(null);
     setError(null);
   };
 
-  // Go to next step
   const handleNext = () => {
     if (samples.length >= 3) {
       setStep('processing');
       setTimeout(enrollVoice, 1000);
     } else {
-      setError('Please record at least 3 voice samples for enrollment.');
+      setError('Please record at least 3 voice samples.');
     }
   };
 
-  // Format time
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -251,313 +210,185 @@ export default function VoiceEnroll() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/20 to-purple-50/30 dark:from-slate-900 dark:via-indigo-950/30 dark:to-purple-950/20 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 mb-6 shadow-lg shadow-violet-500/30">
-            <Music className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-            Voice ID Setup
-          </h1>
-          <p className="mt-4 text-lg text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
-            Secure your account with voice authentication. Record 3-5 clear samples of your voice to enable password-free login.
-          </p>
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <span className="text-primary text-xs font-bold uppercase tracking-wider">Security</span>
+          <h1 className="text-3xl font-bold text-on-surface mt-2">Voice ID Setup</h1>
+          <p className="mt-2 text-on-surface-variant">Record voice samples for password-free login</p>
         </div>
 
-        {/* User info card */}
         {user && (
-          <div className="mb-8 flex items-center justify-center">
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 px-6 shadow-xl border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+          <div className="mb-6 flex justify-center">
+            <div className="bg-surface-container-lowest rounded-full px-4 py-2 flex items-center gap-2 border border-outline-variant/20">
+              <div className="w-6 h-6 rounded-full bg-secondary-fixed-dim flex items-center justify-center">
+                <span className="text-xs font-bold text-on-secondary-fixed-variant">{user.name.charAt(0)}</span>
               </div>
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">{user.name}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{user.enrollment_number}</p>
-              </div>
+              <span className="text-sm font-medium text-on-surface">{user.name}</span>
             </div>
           </div>
         )}
 
-        {/* Error State */}
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3 animate-in slide-in-from-top fade-in duration-300">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-semibold text-red-800 dark:text-red-200">Something went wrong</h4>
-              <p className="text-red-600 dark:text-red-300 text-sm mt-1">{error}</p>
-            </div>
+          <div className="mb-6 bg-error-container border border-outline-variant/20 rounded-lg p-3 flex items-center gap-2">
+            <span className="text-error text-sm">{error}</span>
           </div>
         )}
 
-        {/* Main Content */}
         {step === 'intro' && (
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-8 md:p-12 text-center animate-in zoom-in duration-500">
-            <div className="max-w-lg mx-auto">
-              <div className="mb-8 relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-indigo-500/20 blur-3xl rounded-full"></div>
-                <div className="relative w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 flex items-center justify-center border-4 border-white dark:border-slate-700 shadow-xl">
-                  <Mic className="w-14 h-14 text-violet-600 dark:text-violet-400" />
-                </div>
-              </div>
-
-              <h2 className="text-2xl font-bold text-slate-900 dark:white mb-4">
-                Ready to set up Voice ID?
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                You'll record 3-5 short audio samples. Find a quiet place and speak naturally. This will be used to verify your identity during login.
+          <div className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/20">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">🎤</div>
+              <h2 className="text-xl font-bold text-on-surface mb-2">Voice Authentication</h2>
+              <p className="text-sm text-on-surface-variant mb-4">
+                Add an extra layer of security with your voice. Record 3-5 samples now.
               </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                {['Microphone access', 'Clear audio samples', 'Quick setup'].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item}</span>
-                  </div>
-                ))}
-              </div>
-
+            </div>
+            <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setStep('enroll')}
-                className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white transition-all duration-200 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-full hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-violet-500/40 active:scale-95"
+                className="px-6 py-2 bg-primary text-on-primary font-medium rounded-lg hover:bg-primary/90 transition-colors"
               >
-                <span>Start Setup</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                Start Setup
               </button>
             </div>
           </div>
         )}
 
-        {/* Enrollment Recording */}
         {step === 'enroll' && (
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-8 animate-in slide-in-from-bottom duration-500">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Record Your Voice
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300">
-                Sample {samples.length + 1} of 5 (minimum 3 required)
-              </p>
-            </div>
-
-            {/* Progress bar */}
-            <div className="mb-8">
-              <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400 mb-2">
+          <div className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/20">
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-on-surface-variant mb-2">
                 <span>Progress</span>
                 <span>{samples.length}/5 samples</span>
               </div>
-              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-surface-container rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500"
+                  className="h-full bg-secondary transition-all duration-500"
                   style={{ width: `${Math.min((samples.length / 5) * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
 
-            {/* Waveform Canvas */}
-            <div className="relative mb-8 rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-6 shadow-inner">
+            <div className="mb-6 rounded-lg overflow-hidden bg-surface-container border border-outline-variant/20">
               <canvas
                 ref={canvasRef}
                 width={800}
-                height={200}
-                className="w-full h-48 rounded-xl"
+                height={160}
+                className="w-full h-40"
               />
-              {!isRecording && samples.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <p className="text-slate-400 text-sm">Waveform will appear here</p>
-                </div>
-              )}
             </div>
 
-            {/* Recording timer */}
-            <div className="text-center mb-8">
-              <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${isRecording ? 'bg-red-100 dark:bg-red-900/30 animate-pulse' : 'bg-slate-100 dark:bg-slate-900/50'} transition-colors`}>
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isEnrolling}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording ? 'bg-red-500 hover:bg-red-600 scale-105' : 'bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg hover:shadow-violet-500/40'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isRecording ? (
-                    <MicOff className="w-8 h-8 text-white" />
-                  ) : (
-                    <Mic className="w-8 h-8 text-white" />
-                  )}
-                </button>
-              </div>
-              <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
-                {isRecording ? formatTime(recordingTime) : 'Tap to record'}
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                {isRecording ? 'Recording... (5 seconds max)' : 'Record about 3-5 seconds of speech'}
+            <div className="text-center mb-6">
+              <button
+                onClick={isRecording ? () => {} : startRecording}
+                disabled={isRecording || samples.length >= 5}
+                className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl transition-colors ${isRecording ? 'bg-error text-on-error-fixed' : 'bg-primary text-on-primary-fixed hover:bg-primary/90'} disabled:opacity-50`}
+              >
+                {isRecording ? '⏹' : '🎤'}
+              </button>
+              <p className="text-sm font-medium text-on-surface">
+                {isRecording ? `Recording... ${formatTime(recordingTime)}` : samples.length >= 5 ? 'Maximum samples recorded' : 'Tap to record (3-5 seconds)'}
               </p>
             </div>
 
-            {/* Recorded samples list */}
             {samples.length > 0 && (
-              <div className="mb-8 space-y-2">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Recorded samples:</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-on-surface-variant mb-2 uppercase tracking-wide">Samples</p>
+                <div className="grid grid-cols-5 gap-2">
                   {samples.map((_, idx) => (
                     <div
                       key={idx}
-                      className="relative rounded-xl overflow-hidden border-2 border-green-400 bg-green-50 dark:bg-green-900/20 p-3 flex flex-col items-center justify-center aspect-square group"
+                      className="relative rounded-lg bg-secondary-container p-3 aspect-square flex items-center justify-center border border-secondary"
                     >
-                      <Check className="w-6 h-6 text-green-600 dark:text-green-400 mb-1" />
-                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">
-                        Sample {idx + 1}
-                      </span>
+                      <span className="text-lg text-on-secondary-container">{idx + 1}</span>
                       <button
-                        onClick={() => {
-                          setSamples(prev => prev.filter((_, i) => i !== idx));
-                        }}
-                        className="absolute top-1 right-1 w-5 h-5 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setSamples(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-error rounded-full flex items-center justify-center text-xs text-on-error"
                       >
-                        <span className="text-[10px] text-red-600 dark:text-red-300">✕</span>
+                        ✕
                       </button>
                     </div>
                   ))}
-                  {/* Empty slots */}
                   {[...Array(5 - samples.length)].map((_, idx) => (
                     <div
                       key={`empty-${idx}`}
-                      className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30 p-3 flex flex-col items-center justify-center aspect-sq"
+                      className="rounded-lg border-2 border-dashed border-outline-variant bg-surface-container p-3 flex items-center justify-center aspect-square"
                     >
-                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mb-1">
-                        <span className="text-slate-400 text-xs">{samples.length + idx + 1}</span>
-                      </div>
+                      <span className="text-sm text-outline">{samples.length + idx + 1}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pt-4 border-t border-outline-variant/20">
               <button
                 onClick={resetEnrollment}
-                className="px-6 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm text-secondary hover:text-primary transition-colors"
               >
-                <RotateCcw className="w-4 h-4" />
                 Start Over
               </button>
-
-              <div className="flex gap-3">
-                {samples.length >= 3 && (
-                  <button
-                    onClick={handleNext}
-                    disabled={isEnrolling}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold rounded-full hover:from-emerald-600 hover:to-green-700 disabled:opacity-50 shadow-lg shadow-green-500/30 transition-all"
-                  >
-                    {isEnrolling ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+              {samples.length >= 3 && (
+                <button
+                  onClick={handleNext}
+                  disabled={isEnrolling}
+                  className="px-6 py-2 bg-secondary text-on-secondary font-medium rounded-lg hover:bg-secondary/90 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isEnrolling ? 'Processing...' : 'Continue →'}
+                </button>
+              )}
             </div>
           </div>
         )}
 
-        {/* Processing State */}
         {step === 'processing' && (
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-12 text-center animate-in zoom-in duration-300">
-            <div className="relative w-24 h-24 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-violet-200 dark:border-violet-900/50"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-violet-500 border-t-transparent animate-spin"></div>
-              <div className="absolute inset-2 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
-              Enrolling Voice...
-            </h2>
-            <p className="text-slate-600 dark:text-slate-300">
-              Analyzing voice patterns and creating your unique voiceprint.
-            </p>
+          <div className="bg-surface-container-lowest rounded-xl p-12 border border-outline-variant/20 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-secondary/30 border-t-secondary animate-spin"></div>
+            <h2 className="text-xl font-bold text-on-surface mb-2">Enrolling...</h2>
+            <p className="text-sm text-on-surface-variant">Please wait while we process your voice</p>
           </div>
         )}
 
-        {/* Success State */}
         {step === 'success' && enrollmentResult && (
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-green-200/50 dark:border-green-800/50 p-12 text-center animate-in zoom-in duration-500">
-            <div className="relative inline-block mb-6">
-              <div className="absolute inset-0 bg-green-400 blur-3xl opacity-30 rounded-full"></div>
-              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg">
-                <Sparkles className="w-12 h-12 text-white" />
-              </div>
+          <div className="bg-surface-container-lowest rounded-xl p-8 border border-secondary/30 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary-container flex items-center justify-center">
+              <span className="text-3xl text-on-secondary-container">✓</span>
             </div>
-            <h2 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-4">
-              Voice ID Activated!
-            </h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6 max-w-md mx-auto">
-              Your voice has been successfully enrolled. You can now log in using just your voice!
+            <h2 className="text-2xl font-bold text-secondary mb-2">Voice ID Activated</h2>
+            <p className="text-sm text-on-surface-variant mb-6">
+              Successfully enrolled with {enrollmentResult.sample_count} samples
             </p>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 mb-8 max-w-sm mx-auto border border-green-200 dark:border-green-800">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">Samples</p>
-                  <p className="font-bold text-slate-900 dark:text-white">{enrollmentResult.sample_count}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500 dark:text-slate-400">Threshold</p>
-                  <p className="font-bold text-slate-900 dark:text-white">{enrollmentResult.adaptive_threshold?.toFixed(2)}</p>
-                </div>
+            <div className="bg-surface-container rounded-lg p-4 mb-6 max-w-sm mx-auto border border-outline-variant/20">
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant">Threshold</span>
+                <span className="font-bold text-on-surface">{enrollmentResult.adaptive_threshold?.toFixed(2)}</span>
               </div>
             </div>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={resetEnrollment}
-                className="px-6 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900 transition-all"
-              >
-                Add More Samples
-              </button>
-              <button
                 onClick={() => navigate('/dashboard')}
-                className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-full hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/30 transition-all flex items-center gap-2"
+                className="px-6 py-2 bg-primary text-on-primary font-medium rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Error retry */}
         {step === 'error' && (
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-red-200/50 dark:border-red-800/50 p-12 text-center animate-in zoom-in duration-500">
-            <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-10 h-10 text-red-500" />
+          <div className="bg-error-container border border-outline-variant/20 rounded-xl p-8 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-error flex items-center justify-center">
+              <span className="text-2xl text-on-error">✕</span>
             </div>
-            <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-              Enrollment Failed
-            </h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-md mx-auto">
-              {error || 'An unknown error occurred during voice enrollment. Please try again.'}
-            </p>
+            <h2 className="text-xl font-bold text-error mb-2">Enrollment Failed</h2>
+            <p className="text-sm text-on-surface-variant mb-6">{error}</p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={resetEnrollment}
-                className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-full hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/30 transition-all flex items-center gap-2"
+                className="px-6 py-2 bg-primary text-on-primary font-medium rounded-lg hover:bg-primary/90 transition-colors"
               >
-                <RotateCcw className="w-4 h-4" />
                 Try Again
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="px-6 py-2.5 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900 transition-all"
-              >
-                Skip for Now
               </button>
             </div>
           </div>

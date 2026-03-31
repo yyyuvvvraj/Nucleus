@@ -8,6 +8,7 @@ import Hostel from './pages/Hostel';
 import MessMenu from './pages/MessMenu';
 import Complaints from './pages/Complaints';
 import VoiceEnroll from './pages/VoiceEnroll';
+import Login from './pages/Login';
 
 const ComingSoon = ({ title }) => <div className="p-8 text-2xl font-bold text-gray-300">{title} Module Coming Soon</div>;
 
@@ -15,6 +16,8 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="attendance" element={<Attendance />} />
