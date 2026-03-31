@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mess Menu | Nucleus University ERP</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed-dim": "#ddc39d",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#d8dadc",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#fefcff",
+                        "surface-tint": "#545f73",
+                        "on-primary-fixed": "#111c2d",
+                        "tertiary-container": "#35260c",
+                        "on-secondary-fixed": "#00174b",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#f2f4f6",
+                        "on-primary-fixed-variant": "#3c475a",
+                        "outline": "#75777d",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-tertiary-fixed-variant": "#564427",
+                        "outline-variant": "#c5c6cd",
+                        "on-error-container": "#93000a",
+                        "secondary-container": "#316bf3",
+                        "surface-container": "#eceef0",
+                        "on-surface-variant": "#45474c",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#d8e3fb",
+                        "tertiary-fixed": "#fadfb8",
+                        "on-error": "#ffffff",
+                        "primary": "#091426",
+                        "secondary-fixed": "#dbe1ff",
+                        "primary-container": "#1e293b",
+                        "surface": "#f7f9fb",
+                        "on-surface": "#191c1e",
+                        "inverse-surface": "#2d3133",
+                        "secondary": "#0051d5",
+                        "inverse-primary": "#bcc7de",
+                        "surface-variant": "#e0e3e5",
+                        "on-tertiary-fixed": "#271902",
+                        "tertiary": "#1e1200",
+                        "primary-fixed-dim": "#bcc7de",
+                        "background": "#f7f9fb",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#8590a6",
+                        "on-tertiary-container": "#a38c6a",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- SideNavBar Integration -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-slate-800 flex flex-col border-r border-slate-200 dark:border-slate-800 z-50">
+<div class="px-6 py-8">
+<h1 class="text-xl font-bold text-white tracking-tight">Nucleus</h1>
+<p class="text-xs text-slate-400 font-medium tracking-tight">University ERP</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">calendar_today</span> Attendance
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">schedule</span> Timetable
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">grade</span> Results
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">school</span> Courses
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">hotel</span> Hostel
+            </a>
+<!-- Active State: Mess Menu -->
+<a class="bg-blue-600 text-white rounded-md mx-2 px-4 py-2 flex items-center gap-3 font-sans text-sm font-medium tracking-tight scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">restaurant</span> Mess Menu
+            </a>
+<a class="text-slate-400 hover:text-white mx-2 px-4 py-2 flex items-center gap-3 transition-colors font-sans text-sm font-medium tracking-tight hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined">report_problem</span> Complaints
+            </a>
+</nav>
+<div class="p-4 border-t border-slate-700">
+<div class="flex items-center gap-3 px-2">
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-slate-600" data-alt="close up professional headshot of a male university student with a friendly expression and short dark hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdaDbhwzXqQsO7dNhxVSmswQ-2XDNiey_b-rAQTOFS8mpSNU3TnN6h2o6n12HyOr2L0ZKAooJ355yd_7fWVwheLA8-eNb4Tmj0m435KnIXDv3MK1DojkKa_p8GEUKW-DjVvAVTlc-65L_GiMbA-uvcNKv7goAi9ZQeP3ziscMrOdgZ1wa66khX40CrDdEd_d7MnMn8M0o-_VSJKlYG1pKPTzJIV2JMPASEYIfEWNc2-V9APsDfdGyTsuNmoxjXTZu6UeKJ4gehyaYp"/>
+<div class="overflow-hidden">
+<p class="text-xs font-semibold text-white truncate">Student ID: 20240914</p>
+<p class="text-[10px] text-slate-400 font-mono">B.Tech CS - Sem 4</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar Integration -->
+<header class="sticky top-0 right-0 w-full bg-white flex items-center justify-between px-6 py-3 ml-64 border-b border-slate-200 z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-md text-sm focus:ring-2 focus:ring-secondary transition-all" placeholder="Search menu, venues, or timings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<div class="h-6 w-px bg-slate-200"></div>
+<span class="text-sm font-semibold text-slate-900">Academic Block A</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 p-8 min-h-screen bg-surface">
+<!-- Header Section -->
+<section class="mb-10 flex justify-between items-end">
+<div>
+<span class="label-md uppercase font-semibold tracking-widest text-secondary text-xs mb-2 block">Student Dining Portal</span>
+<h2 class="text-[1.75rem] font-semibold text-primary leading-tight">Mess Menu</h2>
+<p class="text-on-surface-variant text-sm mt-1 max-w-lg">Weekly nutritional schedule for North and South Wings. Valid from Sept 16 - Sept 22.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-highest text-on-surface px-4 py-2 rounded-lg font-medium text-sm transition-all hover:bg-slate-200 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">download</span> PDF Export
+                </button>
+<button class="bg-secondary text-on-secondary px-4 py-2 rounded-lg font-medium text-sm transition-all hover:opacity-90 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">event_repeat</span> View Future
+                </button>
+</div>
+</section>
+<!-- Current Day Highlight - Bento Feature -->
+<section class="grid grid-cols-12 gap-6 mb-8">
+<div class="col-span-12 lg:col-span-8 bg-white rounded-xl border border-outline-variant/20 overflow-hidden flex">
+<div class="w-2 bg-secondary h-full"></div> <!-- Status Pillar -->
+<div class="p-6 flex-1 flex flex-col md:flex-row gap-8">
+<div class="flex-shrink-0">
+<div class="bg-surface-container-low p-4 rounded-lg text-center min-w-[100px]">
+<p class="text-xs font-bold uppercase text-secondary tracking-tighter">Today</p>
+<p class="text-3xl font-bold text-primary">18</p>
+<p class="text-sm font-medium text-on-surface-variant">Wednesday</p>
+</div>
+<div class="mt-4 flex flex-col gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Venue Status</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-xs font-medium">Main Hall Open</span>
+</div>
+</div>
+</div>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-2">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">breakfast_dining</span> Breakfast
+                            </h4>
+<p class="text-sm font-semibold text-primary">Idli Sambhar &amp; Vada</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Filter Coffee, Milk, Fresh Banana, Masala Omelet</p>
+</div>
+<div class="space-y-2">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">lunch_dining</span> Lunch
+                            </h4>
+<p class="text-sm font-semibold text-primary">Paneer Butter Masala</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Jeera Rice, Butter Roti, Dal Tadka, Boondi Raita, Salad</p>
+</div>
+<div class="space-y-2">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">dinner_dining</span> Dinner
+                            </h4>
+<p class="text-sm font-semibold text-primary">Mutton Curry / Mix Veg</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Tandoori Roti, Steam Rice, Gulab Jamun, Papad</p>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-primary text-white rounded-xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-lg font-bold mb-1">Chef's Special</h3>
+<p class="text-blue-200 text-xs mb-4">Upcoming on Friday Night</p>
+<div class="flex items-center gap-4 mb-4">
+<img alt="Chef Special Dish" class="w-20 h-20 rounded-lg object-cover border-2 border-white/10" data-alt="Authentic Italian lasagna with layers of rich meat sauce and melted cheese in a rustic ceramic dish" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSnRfrX6rD72-B7r4Lp-JZJ8bpEWIsmBOL8nI5o3gy8O8HTs8dGdiDgeEfOYdhDMumfGZMJFs8lpHFXFeKjdLYndnqW8FLlEwcHdLKAXlftYPj6F-ZBvR9qL3UxvSdgJA_-SZHQXXHjDYAe3jxmabiokrCrfp3bsCs-6Juhgb9hNEXxT-ouVnM2OBYWzyOC_jn69GUf0fE8MFpSq5mUIW4QdytxPafEghmJ8S_PbzGc4diWkBhgYvT9w-GHo5AEtyLFpQY3k2FveX6"/>
+<div>
+<p class="text-sm font-bold">Classic Lasagna</p>
+<p class="text-xs text-slate-300">Handcrafted pasta with slow-cooked ragu</p>
+</div>
+</div>
+<button class="w-full bg-white/10 hover:bg-white/20 transition-all py-2 rounded-md text-xs font-bold uppercase tracking-widest">Rate Last Meal</button>
+</div>
+<!-- Abstract Design Element -->
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1">restaurant</span>
+</div>
+</div>
+</section>
+<!-- Weekly Grid Layout -->
+<div class="space-y-4">
+<!-- Table Header -->
+<div class="bg-surface-container-high rounded-t-lg flex px-6 py-3">
+<div class="w-32 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Day / Date</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Breakfast (07:30 - 09:00)</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Lunch (12:30 - 14:00)</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Dinner (19:30 - 21:00)</div>
+</div>
+</div>
+<!-- Sunday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Sunday</span>
+<span class="text-xs font-mono text-slate-400">Sept 15</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Aloo Paratha</span>
+<span class="text-on-surface-variant">Curd, Pickle, Tea, Milk, Sprouted Grains</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Veg Biryani</span>
+<span class="text-on-surface-variant">Salad, Onion Raita, Salan, Roasted Papad</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Chole Bhature</span>
+<span class="text-on-surface-variant">Sweet Lassi, Pickle, Onion Rings, Custard</span>
+</div>
+</div>
+</div>
+<!-- Monday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Monday</span>
+<span class="text-xs font-mono text-slate-400">Sept 16</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Poha &amp; Jalebi</span>
+<span class="text-on-surface-variant">Seo, Tea, Coffee, Milk, Hard Boiled Egg</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Rajma Chawal</span>
+<span class="text-on-surface-variant">Plain Rice, Roti, Seasonal Veg, Salad</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Dal Makhani</span>
+<span class="text-on-surface-variant">Tandoori Roti, Mix Veg Sabzi, Rice, Halwa</span>
+</div>
+</div>
+</div>
+<!-- Tuesday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Tuesday</span>
+<span class="text-xs font-mono text-slate-400">Sept 17</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Bread Omlette</span>
+<span class="text-on-surface-variant">Butter, Jam, Tea, Milk, Seasonal Fruit</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Kadahi Paneer</span>
+<span class="text-on-surface-variant">Butter Roti, Fried Rice, Dal Fry, Raita</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Chicken Roast / Veg Cutlet</span>
+<span class="text-on-surface-variant">Phulka, Khichdi, Salad, Ice Cream</span>
+</div>
+</div>
+</div>
+<!-- Wednesday (Selected Highlight) -->
+<div class="bg-blue-50/30 rounded-lg border border-secondary/30 flex px-6 py-5 ring-1 ring-secondary/20">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-secondary">Wednesday</span>
+<span class="text-xs font-mono text-secondary/60">Sept 18</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-primary mb-1">Idli Sambhar</span>
+<span class="text-on-surface-variant">Coconut Chutney, Vada, Milk, Coffee</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-primary mb-1">Paneer Butter Masala</span>
+<span class="text-on-surface-variant">Jeera Rice, Butter Roti, Dal Tadka</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-primary mb-1">Mutton / Mix Veg</span>
+<span class="text-on-surface-variant">Tandoori Roti, Steam Rice, Gulab Jamun</span>
+</div>
+</div>
+</div>
+<!-- Thursday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Thursday</span>
+<span class="text-xs font-mono text-slate-400">Sept 19</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Uttapam</span>
+<span class="text-on-surface-variant">Sambhar, Tea, Milk, Cornflakes</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Bhindi Masala</span>
+<span class="text-on-surface-variant">Arhar Dal, Plain Rice, Roti, Buttermilk</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Egg Curry / Shahi Paneer</span>
+<span class="text-on-surface-variant">Roti, Rice, Veg Salad, Kheer</span>
+</div>
+</div>
+</div>
+<!-- Friday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Friday</span>
+<span class="text-xs font-mono text-slate-400">Sept 20</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Puri Bhaji</span>
+<span class="text-on-surface-variant">Tea, Coffee, Milk, Banana</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Mix Veg</span>
+<span class="text-on-surface-variant">Dal Fry, Rice, Roti, Salad, Curd</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Lasagna (Special)</span>
+<span class="text-on-surface-variant">Garlic Bread, Herb Rice, Soft Drink</span>
+</div>
+</div>
+</div>
+<!-- Saturday -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 flex px-6 py-5 transition-all hover:bg-slate-50 group">
+<div class="w-32 flex flex-col justify-center">
+<span class="text-sm font-bold text-primary">Saturday</span>
+<span class="text-xs font-mono text-slate-400">Sept 21</span>
+</div>
+<div class="flex-1 grid grid-cols-3 gap-6">
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Upma</span>
+<span class="text-on-surface-variant">Peanut Chutney, Tea, Milk, Boiled Egg</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Aloo Matar</span>
+<span class="text-on-surface-variant">Dal Tadka, Rice, Roti, Fruit Salad</span>
+</div>
+<div class="text-xs leading-relaxed">
+<span class="block font-semibold text-on-surface mb-1">Pav Bhaji</span>
+<span class="text-on-surface-variant">Extra Pav, Butter, Onion, Moong Dal Halwa</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<footer class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 pb-12">
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant/10">
+<h5 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-4">Timings Disclaimer</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Entry is permitted up to 15 minutes before the end of each session. Please carry your University ID card for biometric validation at the gate.</p>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant/10">
+<h5 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-4">Nutritional Focus</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">All meals are prepared with 100% sunflower oil. Low sodium options are available at Counter 4. High protein diet (extra eggs/milk) requires pre-registration.</p>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border border-outline-variant/10">
+<h5 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-4">Contact Mess Manager</h5>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">support_agent</span>
+</div>
+<div class="text-xs">
+<p class="font-bold text-primary">Mr. R. K. Sharma</p>
+<p class="text-on-surface-variant">Ext: 4055 | mess@nucleus.univ</p>
+</div>
+</div>
+</div>
+</footer>
+</main>
+</body></html>
