@@ -4,7 +4,7 @@ import io
 import soundfile as sf
 import noisereduce as nr
 
-def extract_mcff(file_bytes: bytes, sr: int = 16000, n_mfcc: int = 13) -> np.ndarray:
+def extract_mfcc(file_bytes: bytes, sr: int = 16000, n_mfcc: int = 13) -> np.ndarray:
     """
     Load audio from bytes, apply noise reduction, voice activity detection,
     resample, normalize, extract MFCC and delta features, and return the mean.
