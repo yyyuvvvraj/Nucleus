@@ -94,3 +94,8 @@ Install with: `pip install -r requirements.txt`
 5. Test with different microphones if available
 
 The system is now significantly more robust than the original basic MFCC + cosine similarity approach while remaining suitable for a college project scope.
+
+
+
+
+
