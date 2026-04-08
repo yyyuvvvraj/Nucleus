@@ -5,6 +5,7 @@ import numpy as np
 import json
 
 from utils.audio_processing import extract_mfcc
+from utils.face_processing import extract_face_embedding
 from utils.similarity import calculate_similarity
 
 app = FastAPI(title="Voice Biometric Authentication API")
@@ -153,3 +154,70 @@ async def verify_voice(
         "samples_compared": len(stored_np),
         "individual_scores": [round(float(s), 4) for s in similarities]
     }
+
+
+# ==========================================
+# FACE AUTHENTICATION ENDPOINTS
+# ==========================================
+
+@app.post("/face/enroll")
+async def enroll_face(
+    userId: str = Form(...),
+    file: UploadFile = File(...),
+):
+    """
+    Extract facial embedding from a single image and return it to be stored by the MERN backend.
+    """
+    try:
+        content = await file.read()
+        embedding = extract_face_embedding(content, model_name="Facenet512")
+        
+        # We don't dynamically adapt threshold for face as it's highly robust natively.
+        # Facenet512 with cosine similarity usually requires at least 0.70 to 0.75 distance threshold
+        # We use strict 0.75 for absolute certainty.
+        
+        return {
+            "success": True,
+            "message": "Face enrolled successfully.",
+            "userId": userId,
+            "embedding": embedding.tolist(),
+            "threshold": 0.75 
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/face/verify")
+async def verify_face(
+    userId: str = Form(...),
+    file: UploadFile = File(...),
+    stored_embedding: str = Form(...),  # JSON from MongoDB
+):
+    """
+    Verify a live face snapshot against the enrolled facial embedding.
+    """
+    try:
+        # Resolve array
+        enrolled_emb = np.array(json.loads(stored_embedding))
+        
+        # Process live image
+        content = await file.read()
+        new_embedding = extract_face_embedding(content, model_name="Facenet512")
+        
+        # Calculate cosine similarity
+        similarity = calculate_similarity(enrolled_emb, new_embedding)
+        
+        # Using 0.75 as the strict face matching threshold
+        threshold = 0.75
+        is_authenticated = similarity >= threshold
+        
+        return {
+            "success": True,
+            "userId": userId,
+            "similarity_score": round(float(similarity), 4),
+            "authenticated": bool(is_authenticated),
+            "threshold_used": threshold
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

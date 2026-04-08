@@ -6,13 +6,23 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     enrollment_number: { type: String, required: true, unique: true },
-    branch: { type: String, required: true },
-    semester: { type: Number, required: true },
+    branch: { type: String }, // Optional for non-student roles
+    semester: { type: Number }, // Optional for non-student roles
+    // Role & Setup pipeline
+    role: { type: String, enum: ['admin', 'director', 'faculty', 'warden', 'recruiter', 'student'], default: 'student' },
+    isFirstLogin: { type: Boolean, default: true },
+    initialPassword: { type: String }, // Plain-text stored only for recruiter visibility
+    batch: { type: String }, // e.g. '2024-2028'
     // Voice authentication fields
     voice_enrolled: { type: Boolean, default: false },
     voice_embeddings: { type: [[Number]], default: [] }, // Array of MFCC feature vectors
     voice_threshold: { type: Number, default: 0.85 },
-    voice_updated_at: { type: Date }
+    voice_updated_at: { type: Date },
+    // Face authentication fields
+    face_enrolled: { type: Boolean, default: false },
+    face_embeddings: { type: [Number], default: [] }, // Single large vector
+    face_threshold: { type: Number, default: 0.75 },
+    face_updated_at: { type: Date }
 }, {
     timestamps: true
 });

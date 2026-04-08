@@ -27,8 +27,8 @@ function Waveform({ isRecording, analyserRef }) {
         analyserRef.current.getByteTimeDomainData(data);
 
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#a78bfa';
-        ctx.shadowColor = '#7c3aed';
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
         ctx.shadowBlur = 8;
         ctx.beginPath();
 
@@ -47,7 +47,7 @@ function Waveform({ isRecording, analyserRef }) {
         // Idle flat line with subtle pulse
         const t = Date.now() / 800;
         ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(167, 139, 250, 0.35)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
         ctx.beginPath();
         for (let x = 0; x < W; x++) {
           const y = H / 2 + Math.sin(x / 35 + t) * 3;
@@ -67,7 +67,7 @@ function Waveform({ isRecording, analyserRef }) {
       ref={canvasRef}
       width={340}
       height={60}
-      style={{ width: '100%', borderRadius: '12px', background: 'rgba(139,92,246,0.06)' }}
+      style={{ width: '100%', borderRadius: '12px', background: 'rgba(255,255,255,0.06)' }}
     />
   );
 }
@@ -142,6 +142,131 @@ async function decodeToWav(blob) {
   const rendered = await offlineCtx.startRendering();
   const pcm      = rendered.getChannelData(0); // Float32Array mono
   return encodeWAV(pcm, TARGET_SR);            // returns Blob('audio/wav')
+}
+
+/* ─────────────────────────────────────────
+   Camera Capture Widget
+───────────────────────────────────────── */
+function CameraCapture({ onCaptureComplete, disabled }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [hasCaptured, setHasCaptured] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        if (!active) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        if (active) setError('Camera access denied or unavailable.');
+      }
+    };
+    startCamera();
+    return () => {
+      active = false;
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  const takePhoto = () => {
+    if (!videoRef.current || disabled) return;
+    const video = videoRef.current;
+    
+    // Ensure video has actual dimensions before drawing
+    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw flipped to match the mirrored video preview
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `face_${Date.now()}.png`, { type: 'image/png' });
+      setPhoto(URL.createObjectURL(blob));
+      setHasCaptured(true);
+      onCaptureComplete(file);
+    }, 'image/png');
+  };
+
+  const retakePhoto = () => {
+    setHasCaptured(false);
+    setPhoto(null);
+    onCaptureComplete(null);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      {error && <Banner type="error" message={error} />}
+      <div style={{ 
+        position: 'relative', 
+        width: '240px', 
+        height: '240px', 
+        borderRadius: '50%', 
+        overflow: 'hidden',
+        border: '4px solid rgba(255,255,255,0.2)',
+        background: 'rgba(0,0,0,0.2)',
+        boxShadow: hasCaptured ? '0 0 20px rgba(255,255,255,0.4)' : '0 0 20px rgba(255,255,255,0.1)'
+      }}>
+        {!hasCaptured ? (
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
+          />
+        ) : (
+          <img src={photo} alt="Captured Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+      </div>
+
+      {!hasCaptured ? (
+        <button
+          type="button"
+          onClick={takePhoto}
+          disabled={disabled || !!error}
+          style={{
+            marginTop: '8px',
+            padding: '10px 24px',
+            borderRadius: '24px',
+            border: 'none',
+            background: '#ffffff',
+            color: '#000000',
+            fontWeight: 600,
+            cursor: disabled || !!error ? 'not-allowed' : 'pointer',
+            opacity: disabled || !!error ? 0.5 : 1
+          }}
+        >
+          📸 Capture Photo
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={retakePhoto}
+          disabled={disabled}
+          className="ghost-btn"
+        >
+          Retake Photo
+        </button>
+      )}
+    </div>
+  );
 }
 
 function VoiceRecorder({ onRecordingComplete, label, sampleIndex, totalSamples, disabled }) {
@@ -246,11 +371,11 @@ function VoiceRecorder({ onRecordingComplete, label, sampleIndex, totalSamples, 
             : status === 'done'
               ? 'linear-gradient(135deg, #10b981, #059669)'
               : status === 'converting'
-                ? 'linear-gradient(135deg, #d97706, #b45309)'
-                : 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                ? '#e4e4e7'
+                : '#ffffff',
           boxShadow: isRecording
             ? '0 0 0 8px rgba(239,68,68,0.2), 0 0 30px rgba(239,68,68,0.4)'
-            : '0 0 20px rgba(124,58,237,0.4)',
+            : 'auto',
           transition: 'all 0.3s ease',
           display: 'flex',
           alignItems: 'center',
@@ -269,13 +394,13 @@ function VoiceRecorder({ onRecordingComplete, label, sampleIndex, totalSamples, 
             <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : status === 'converting' ? (
-          <span style={{ width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+          <span style={{ width: '28px', height: '28px', border: '3px solid rgba(0,0,0,0.3)', borderTopColor: 'black', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
         ) : (
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill={isRecording ? "white" : "black"}>
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="white" fill="none" strokeWidth="2" strokeLinecap="round" />
-            <line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke={isRecording ? "white" : "black"} fill="none" strokeWidth="2" strokeLinecap="round" />
+            <line x1="12" y1="19" x2="12" y2="23" stroke={isRecording ? "white" : "black"} strokeWidth="2" strokeLinecap="round" />
+            <line x1="8" y1="23" x2="16" y2="23" stroke={isRecording ? "white" : "black"} strokeWidth="2" strokeLinecap="round" />
           </svg>
         )}
       </button>
@@ -307,17 +432,17 @@ function StepBar({ steps, current }) {
               background: i < current
                 ? 'linear-gradient(135deg,#10b981,#059669)'
                 : i === current
-                  ? 'linear-gradient(135deg,#7c3aed,#4f46e5)'
+                  ? '#ffffff'
                   : 'rgba(255,255,255,0.08)',
-              border: i === current ? '2px solid #a78bfa' : '2px solid transparent',
+              border: i === current ? '2px solid #ffffff' : '2px solid transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '12px', fontWeight: 700, color: 'white',
+              fontSize: '12px', fontWeight: 700, color: i === current ? 'black' : 'white',
               transition: 'all 0.4s ease',
-              boxShadow: i === current ? '0 0 12px rgba(167,139,250,0.5)' : 'none',
+              boxShadow: i === current ? '0 0 12px rgba(255,255,255,0.3)' : 'none',
             }}>
               {i < current ? '✓' : i + 1}
             </div>
-            <span style={{ fontSize: '10px', color: i === current ? '#a78bfa' : 'rgba(203,213,225,0.4)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '10px', color: i === current ? 'white' : 'rgba(203,213,225,0.4)', whiteSpace: 'nowrap' }}>
               {label}
             </span>
           </div>
@@ -355,12 +480,12 @@ function Field({ label, type = 'text', value, onChange, placeholder, required, m
         max={max}
         style={{
           width: '100%', padding: '10px 14px', borderRadius: '10px',
-          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(167,139,250,0.25)',
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
           color: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
           transition: 'border-color 0.2s ease',
         }}
-        onFocus={e => e.target.style.borderColor = 'rgba(167,139,250,0.6)'}
-        onBlur={e => e.target.style.borderColor = 'rgba(167,139,250,0.25)'}
+        onFocus={e => e.target.style.borderColor = 'rgba(255,255,255,0.5)'}
+        onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.15)'}
       />
     </div>
   );
@@ -404,7 +529,7 @@ function VerificationPanel({ result }) {
       textAlign: 'center'
     }}>
       <h3 style={{ margin: '0 0 16px', fontSize: '15px', color: 'white' }}>
-        Voice Comparison Analysis
+        Biometric Match Analysis
       </h3>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -470,7 +595,6 @@ function VerificationPanel({ result }) {
 ───────────────────────────────────────── */
 export default function Login() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
 
   // --- SHARED STATE ---
   const [error, setError] = useState('');
@@ -478,38 +602,24 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN STATE ---
-  const [loginStep, setLoginStep] = useState(1); // 1: credentials, 2: voice
+  const [loginStep, setLoginStep] = useState(1); // 1: credentials, 2: face, 3: voice
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginTempToken, setLoginTempToken] = useState('');
+  const [loginFaceBlob, setLoginFaceBlob] = useState(null);
+  const [faceAuthResult, setFaceAuthResult] = useState(null);
   const [loginVoiceBlob, setLoginVoiceBlob] = useState(null);
   const [authResult, setAuthResult] = useState(null);
 
-  // --- REGISTER STATE ---
-  const [regStep, setRegStep] = useState(1); // 1: credentials, 2: voice, 3: processing
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regEnrollment, setRegEnrollment] = useState('');
-  const [regBranch, setRegBranch] = useState('');
-  const [regSemester, setRegSemester] = useState('');
-  const [regVoiceSamples, setRegVoiceSamples] = useState([]); // array of Blobs
-  const [regToken, setRegToken] = useState(''); // JWT from register, used to call enroll
-  const [regUserId, setRegUserId] = useState('');
+  // --- SETUP STATE (isFirstLogin === true) ---
+  const [isSetup, setIsSetup] = useState(false);
+  const [setupStep, setSetupStep] = useState(1); // 1: password, 2: face, 3: voice
+  const [setupToken, setSetupToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [setupFaceBlob, setSetupFaceBlob] = useState(null);
+  const [setupVoiceSamples, setSetupVoiceSamples] = useState([]);
   const [currentSample, setCurrentSample] = useState(1);
   const REQUIRED_SAMPLES = 3;
-
-  const switchMode = (m) => {
-    setMode(m);
-    setError('');
-    setInfo('');
-    setLoginStep(1);
-    setRegStep(1);
-    setLoginVoiceBlob(null);
-    setRegVoiceSamples([]);
-    setCurrentSample(1);
-    setAuthResult(null);
-  };
 
   /* ── LOGIN: Step 1 — validate credentials ── */
   const handleLoginCredentials = async (e) => {
@@ -524,342 +634,251 @@ export default function Login() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Invalid credentials');
-      setLoginTempToken(data.tempToken);
-      setLoginStep(2);
-      setInfo('Credentials verified! Now speak into your microphone to authenticate your voice.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ── LOGIN: Step 2 — verify voice ── */
-  const handleLoginVoice = async () => {
-    if (!loginVoiceBlob) { setError('Please record your voice first.'); return; }
-    setError('');
-    setLoading(true);
-    setAuthResult(null);
-    try {
-      const formData = new FormData();
-      // loginVoiceBlob is already a File (set in VoiceRecorder) — just append it
-      formData.append('file', loginVoiceBlob);
-
-      const res = await fetch(`${API_BASE_URL}/api/auth/voice/login-verify`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${loginTempToken}` },
-        body: formData,
-      });
-      const data = await res.json();
       
-      // We always have a result we can show, even if res is not ok (e.g. 401 unauthorized with similarity scores)
-      if (data.similarity_score !== undefined) {
-        setAuthResult(data);
+      if (data.bypass) {
+        localStorage.setItem('nucleusToken', data.token);
+        localStorage.setItem('nucleusUser', JSON.stringify(data));
+        navigate('/app');
+        return;
       }
 
+      if (data.isFirstLogin) {
+        setSetupToken(data.setupToken);
+        setIsSetup(true);
+        setSetupStep(1);
+        setInfo('Welcome! As part of your first login, please establish a secure password.');
+      } else {
+        setLoginTempToken(data.tempToken);
+        setLoginStep(2);
+        setInfo('Credentials verified! Now let\'s authenticate your face.');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ── LOGIN: Step 2 — verify face ── */
+  const handleLoginFace = async () => {
+    if (!loginFaceBlob) { setError('Please capture your face first.'); return; }
+    setError(''); setLoading(true); setFaceAuthResult(null);
+    try {
+      const formData = new FormData(); formData.append('file', loginFaceBlob);
+      const res = await fetch(`${API_BASE_URL}/api/auth/face/login-verify`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${loginTempToken}` }, body: formData,
+      });
+      const data = await res.json();
+      if (data.similarity_score !== undefined) setFaceAuthResult(data);
+      if (!res.ok) throw new Error(data.message || 'Face authentication failed');
+
+      setInfo('Face verified! Now speak into your microphone to verify your voice.');
+      setTimeout(() => { setLoginStep(3); setInfo('Speak your passphrase or say anything.'); }, 2000);
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
+  /* ── LOGIN: Step 3 — verify voice ── */
+  const handleLoginVoice = async () => {
+    if (!loginVoiceBlob) { setError('Please record your voice first.'); return; }
+    setError(''); setLoading(true); setAuthResult(null);
+    try {
+      const formData = new FormData(); formData.append('file', loginVoiceBlob);
+      const res = await fetch(`${API_BASE_URL}/api/auth/voice/login-verify`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${loginTempToken}` }, body: formData,
+      });
+      const data = await res.json();
+      if (data.similarity_score !== undefined) setAuthResult(data);
       if (!res.ok) throw new Error(data.message || 'Voice authentication failed');
 
-      // Store full session token
       localStorage.setItem('nucleusToken', data.token);
-      localStorage.setItem('nucleusUser', JSON.stringify({
-        _id: data._id,
-        name: data.name,
-        email: data.email,
-        enrollment_number: data.enrollment_number,
-        branch: data.branch,
-        semester: data.semester,
-      }));
-      
-      // Delay navigation so user can see their similarity score
-      setInfo('Voice verified! Redirecting to dashboard...');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
-      
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      localStorage.setItem('nucleusUser', JSON.stringify(data));
+      navigate('/app');
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
-  /* ── REGISTER: Step 1 — create account ── */
-  const handleRegisterCredentials = async (e) => {
+  /* ── SETUP: Step 1 — change password ── */
+  const handleSetupPassword = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    if(newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    setError(''); setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/setup/password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: regName,
-          email: regEmail,
-          password: regPassword,
-          enrollment_number: regEnrollment,
-          branch: regBranch,
-          semester: parseInt(regSemester),
-        }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${setupToken}` },
+        body: JSON.stringify({ password: newPassword })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
-      setRegToken(data.token);
-      setRegUserId(data._id);
-      setRegStep(2);
-      setInfo(`Account created! Now record ${REQUIRED_SAMPLES} voice samples so we can recognize you on future logins.`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      if(!res.ok) throw new Error('Password reset failed');
+      setSetupStep(2);
+      setInfo('Password Updated! Now let\'s setup your biometric Face ID.');
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
-  /* ── REGISTER: Step 2 — collect each voice sample ── */
-  const handleRegSampleRecorded = (blob) => {
-    setRegVoiceSamples(prev => [...prev, blob]);
+  /* ── SETUP: Step 2 — enroll face ── */
+  const handleSetupFace = async () => {
+    if (!setupFaceBlob) { setError('Please capture a photo first.'); return; }
+    setError(''); setLoading(true);
+    try {
+      const formData = new FormData(); formData.append('file', setupFaceBlob);
+      const res = await fetch(`${API_BASE_URL}/api/auth/face/enroll`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${setupToken}` }, body: formData,
+      });
+      if (!res.ok) throw new Error('Face enrollment failed');
+      setSetupStep(3);
+      setInfo(`Face enrolled! Now record ${REQUIRED_SAMPLES} voice samples.`);
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
-  const handleNextSample = () => {
-    if (currentSample < REQUIRED_SAMPLES) {
-      setCurrentSample(s => s + 1);
-    }
-  };
-
-  /* ── REGISTER: Step 3 — enroll voice ── */
-  const handleEnrollVoice = async () => {
-    setError('');
-    setLoading(true);
-    setRegStep(3);
+  /* ── SETUP: Step 3 — enroll voice & finalize ── */
+  const handleSetupVoiceFinalize = async () => {
+    setError(''); setLoading(true);
     try {
       const formData = new FormData();
-      // Each element of regVoiceSamples is already a File from VoiceRecorder
-      regVoiceSamples.forEach((file) => {
-        formData.append('files', file);
-      });
-
+      setupVoiceSamples.forEach(file => formData.append('files', file));
       const res = await fetch(`${API_BASE_URL}/api/auth/voice/enroll`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${regToken}` },
-        body: formData,
+        method: 'POST', headers: { 'Authorization': `Bearer ${setupToken}` }, body: formData,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Voice enrollment failed');
+      if (!res.ok) throw new Error('Voice enrollment failed');
 
-      // Store session
-      localStorage.setItem('nucleusToken', regToken);
-      localStorage.setItem('nucleusUser', JSON.stringify({
-        _id: regUserId,
-        name: regName,
-        email: regEmail,
-        enrollment_number: regEnrollment,
-        branch: regBranch,
-        semester: regSemester,
-      }));
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message);
-      setRegStep(2);
-    } finally {
-      setLoading(false);
-    }
+      // Finalize setup
+      const fRes = await fetch(`${API_BASE_URL}/api/auth/setup/finalize`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${setupToken}` }
+      });
+      const FinalData = await fRes.json();
+      if(!fRes.ok) throw new Error('Failed to finalize setup');
+
+      localStorage.setItem('nucleusToken', FinalData.token);
+      localStorage.setItem('nucleusUser', JSON.stringify(FinalData));
+      navigate('/app');
+    } catch(err) { setError(err.message); } finally { setLoading(false); }
   };
 
   /* ══════════════════════════════════════════
      RENDER
   ══════════════════════════════════════════ */
-  const isRegVoiceSampleReady = regVoiceSamples.length === currentSample;
-  const allSamplesCollected = regVoiceSamples.length >= REQUIRED_SAMPLES;
+  const isSetupVoiceReady = setupVoiceSamples.length === currentSample;
+  const allSetupSamplesCollected = setupVoiceSamples.length >= REQUIRED_SAMPLES;
 
   return (
-    <div className="login-root">
-      {/* Aurora background layers */}
-      <div className="aurora-layer aurora-1" />
-      <div className="aurora-layer aurora-2" />
-      <div className="aurora-layer aurora-3" />
-      <div className="aurora-noise" />
-
-      <div className="login-card">
-        {/* Logo mark */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{
-            width: '52px', height: '52px', borderRadius: '16px', margin: '0 auto 12px',
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(124,58,237,0.45)',
-          }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fillOpacity="0.5" />
-              <path d="M12 6v6l4 2" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            </svg>
+    <div className="login-container-wrapper">
+      <div className="sky-bg" />
+      <div className="sun-ray" />
+      <div className="penthouse-card">
+        <div className="view-section">
+          <div className="university-logo"><div className="dot" />Nucleus Portal</div>
+          <div className="headline"><h1>Elevate your<br /><span>Academic</span> vision.</h1></div>
+          <div className="campus-stats">
+            <div><strong>Secure Session</strong><br />End-to-End Encrypted</div>
+            <div><strong>Multi-Factor</strong><br />Biometrics Active</div>
           </div>
-          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
-            Nucleus Portal
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'rgba(203,213,225,0.55)' }}>
-            Secured with Voice Biometrics
-          </p>
         </div>
+        <div className="auth-section">
 
-        {/* Mode switcher */}
-        {(mode === 'login' ? loginStep === 1 : regStep === 1) && (
-          <div style={{
-            display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '12px',
-            padding: '4px', marginBottom: '24px', gap: '4px',
-          }}>
-            {['login', 'register'].map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                style={{
-                  flex: 1, padding: '8px', borderRadius: '9px', border: 'none', cursor: 'pointer',
-                  fontWeight: 600, fontSize: '14px', transition: 'all 0.25s ease',
-                  background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent',
-                  color: mode === m ? 'white' : 'rgba(203,213,225,0.5)',
-                  boxShadow: mode === m ? '0 4px 12px rgba(124,58,237,0.35)' : 'none',
-                }}
-              >
-                {m === 'login' ? 'Sign In' : 'Register'}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ─────── LOGIN FLOW ─────── */}
-        {mode === 'login' && (
-          <>
-            <StepBar steps={['Credentials', 'Voice ID']} current={loginStep - 1} />
-
-            {loginStep === 1 && (
-              <form onSubmit={handleLoginCredentials} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <Field label="Email" type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@university.edu" required />
-                <Field label="Password" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" required />
-                <Banner type="error" message={error} />
-                <button type="submit" disabled={loading} className="primary-btn">
-                  {loading ? <Spinner /> : 'Verify Credentials →'}
-                </button>
-              </form>
-            )}
-
-            {loginStep === 2 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <Banner type="info" message={info} />
-                <VoiceRecorder
-                  label="Speak your passphrase or say anything — your voice is the key"
-                  onRecordingComplete={(blob) => { setLoginVoiceBlob(blob); setInfo(''); setAuthResult(null); setError(''); }}
-                />
-
-                <VerificationPanel result={authResult} />
-
-                {error && !authResult && <Banner type="error" message={error} />}
-                
-                <button
-                  type="button"
-                  onClick={handleLoginVoice}
-                  disabled={!loginVoiceBlob || loading}
-                  className="primary-btn"
-                >
-                  {loading ? <Spinner /> : '🔐 Authenticate with Voice'}
-                </button>
-                <button type="button" onClick={() => { setLoginStep(1); setError(''); setInfo(''); setLoginVoiceBlob(null); setAuthResult(null); }} className="ghost-btn">
-                  ← Back to credentials
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ─────── REGISTER FLOW ─────── */}
-        {mode === 'register' && (
-          <>
-            <StepBar steps={['Account Info', 'Voice Samples', 'Complete']} current={regStep - 1} />
-
-            {regStep === 1 && (
-              <form onSubmit={handleRegisterCredentials} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <Field label="Full Name" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Yuvraj Singh" required />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <Field label="Enrollment No." value={regEnrollment} onChange={e => setRegEnrollment(e.target.value)} placeholder="EN2024001" required />
-                  <Field label="Semester" type="number" value={regSemester} onChange={e => setRegSemester(e.target.value)} placeholder="4" min="1" max="8" required />
-                </div>
-                <Field label="Branch" value={regBranch} onChange={e => setRegBranch(e.target.value)} placeholder="Computer Science" required />
-                <Field label="Email" type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="you@university.edu" required />
-                <Field label="Password" type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} placeholder="Min 6 characters" required />
-                <Banner type="error" message={error} />
-                <button type="submit" disabled={loading} className="primary-btn">
-                  {loading ? <Spinner /> : 'Create Account →'}
-                </button>
-              </form>
-            )}
-
-            {regStep === 2 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <Banner type="info" message={info} />
-
-                {/* Sample dots progress */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  {Array.from({ length: REQUIRED_SAMPLES }, (_, i) => (
-                    <div key={i} style={{
-                      width: '10px', height: '10px', borderRadius: '50%',
-                      background: i < regVoiceSamples.length
-                        ? '#10b981'
-                        : i === regVoiceSamples.length
-                          ? '#7c3aed'
-                          : 'rgba(255,255,255,0.12)',
-                      transition: 'background 0.3s ease',
-                      boxShadow: i === regVoiceSamples.length ? '0 0 8px #7c3aed' : 'none',
-                    }} />
-                  ))}
-                </div>
-
-                <VoiceRecorder
-                  key={currentSample}  // remount per sample
-                  sampleIndex={currentSample}
-                  totalSamples={REQUIRED_SAMPLES}
-                  label="Speak naturally — say your name, a phrase, or count to five"
-                  onRecordingComplete={handleRegSampleRecorded}
-                  disabled={regVoiceSamples.length >= currentSample}
-                />
-
-                <Banner type="error" message={error} />
-
-                {/* "Next Sample" vs "Enroll Voice" button */}
-                {isRegVoiceSampleReady && !allSamplesCollected && (
-                  <button type="button" onClick={handleNextSample} className="primary-btn">
-                    Next Sample ({currentSample + 1}/{REQUIRED_SAMPLES}) →
+          {/* ─────── STANDARD LOGIN ─────── */}
+          {!isSetup && (
+            <>
+              <StepBar steps={['Credentials', 'Face ID', 'Voice ID']} current={loginStep - 1} />
+              
+              {loginStep === 1 && (
+                <form onSubmit={handleLoginCredentials} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <Field label="Email" type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@university.edu" required />
+                  <Field label="Password" type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" required />
+                  <Banner type="error" message={error} />
+                  <button type="submit" disabled={loading} className="primary-btn">
+                    {loading ? <Spinner /> : 'Sign In →'}
                   </button>
-                )}
+                  <p style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(203,213,225,0.4)', marginTop: '10px' }}>
+                    Registration is disabled. Contact your Recruiter for access.
+                  </p>
+                </form>
+              )}
 
-                {allSamplesCollected && (
-                  <button type="button" onClick={handleEnrollVoice} disabled={loading} className="primary-btn enroll-btn">
-                    {loading ? <Spinner /> : '🎤 Enroll Voice & Enter Portal'}
+              {loginStep === 2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <Banner type="info" message={info} />
+                  <CameraCapture onCaptureComplete={(b) => { setLoginFaceBlob(b); setInfo(''); setFaceAuthResult(null); setError(''); }} disabled={loading} />
+                  <VerificationPanel result={faceAuthResult} />
+                  {error && !faceAuthResult && <Banner type="error" message={error} />}
+                  <button type="button" onClick={handleLoginFace} disabled={!loginFaceBlob || loading} className="primary-btn">
+                    {loading ? <Spinner /> : '👤 Authenticate Face'}
                   </button>
-                )}
+                </div>
+              )}
 
-                <button type="button" onClick={() => { setRegStep(1); setError(''); setInfo(''); setRegVoiceSamples([]); setCurrentSample(1); }} className="ghost-btn">
-                  ← Back
-                </button>
+              {loginStep === 3 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <Banner type="info" message={info} />
+                  <VoiceRecorder label="Speak your passphrase" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
+                  <VerificationPanel result={authResult} />
+                  {error && !authResult && <Banner type="error" message={error} />}
+                  <button type="button" onClick={handleLoginVoice} disabled={!loginVoiceBlob || loading} className="primary-btn">
+                    {loading ? <Spinner /> : '🔐 Authenticate with Voice'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ─────── SETUP / FIRST LOGIN ─────── */}
+          {isSetup && (
+            <>
+              <div style={{ marginBottom: '24px' }}>
+                <span style={{ fontSize: '12px', background: 'white', color: 'black', padding: '4px 10px', borderRadius: '10px', fontWeight: 'bold' }}>SYSTEM SETUP REQUIRED</span>
               </div>
-            )}
+              <StepBar steps={['Override Password', 'Face Profile', 'Voice Baseline']} current={setupStep - 1} />
 
-            {regStep === 3 && (
-              <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                <div className="processing-spinner" />
-                <p style={{ color: 'rgba(203,213,225,0.7)', fontWeight: 500, marginTop: '16px' }}>
-                  Enrolling your voiceprint…
-                </p>
-                <p style={{ color: 'rgba(203,213,225,0.4)', fontSize: '12px', marginTop: '4px' }}>
-                  Extracting MFCC features and building your biometric profile
-                </p>
-                <Banner type="error" message={error} />
-              </div>
-            )}
-          </>
-        )}
+              {setupStep === 1 && (
+                <form onSubmit={handleSetupPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <Banner type="info" message={info} />
+                  <Field label="New Password Override" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters" required />
+                  <Banner type="error" message={error} />
+                  <button type="submit" disabled={loading} className="primary-btn">
+                    {loading ? <Spinner /> : 'Update Password →'}
+                  </button>
+                </form>
+              )}
 
-        <p style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(203,213,225,0.3)', marginTop: '24px', marginBottom: 0 }}>
-          Your voice data is stored securely and never shared.
-        </p>
+              {setupStep === 2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <Banner type="info" message={info} />
+                  <CameraCapture onCaptureComplete={(b) => { setSetupFaceBlob(b); setInfo(''); setError(''); }} disabled={loading} />
+                  <Banner type="error" message={error} />
+                  <button type="button" onClick={handleSetupFace} disabled={!setupFaceBlob || loading} className="primary-btn">
+                    {loading ? <Spinner /> : '👤 Enroll Face Scan'}
+                  </button>
+                </div>
+              )}
+
+              {setupStep === 3 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <Banner type="info" message={info} />
+                  
+                  {/* Sample dots progress */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                    {Array.from({ length: REQUIRED_SAMPLES }, (_, i) => (
+                      <div key={i} style={{ width: '10px', height: '10px', borderRadius: '50%', background: i < setupVoiceSamples.length ? '#10b981' : i === setupVoiceSamples.length ? '#ffffff' : 'rgba(255,255,255,0.12)' }} />
+                    ))}
+                  </div>
+
+                  <VoiceRecorder key={currentSample} sampleIndex={currentSample} totalSamples={REQUIRED_SAMPLES} label="Speak naturally to construct baseline" onRecordingComplete={b => setSetupVoiceSamples(p => [...p, b])} disabled={setupVoiceSamples.length >= currentSample} />
+                  <Banner type="error" message={error} />
+
+                  {isSetupVoiceReady && !allSetupSamplesCollected && (
+                    <button type="button" onClick={() => setCurrentSample(s => s + 1)} className="primary-btn">
+                      Next Sample ({currentSample + 1}/{REQUIRED_SAMPLES}) →
+                    </button>
+                  )}
+
+                  {allSetupSamplesCollected && (
+                    <button type="button" onClick={handleSetupVoiceFinalize} disabled={loading} className="primary-btn">
+                      {loading ? <Spinner /> : '🎤 Enroll & Finalize Setup'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+        </div>
       </div>
     </div>
   );

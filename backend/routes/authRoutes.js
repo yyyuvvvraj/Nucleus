@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, checkCredentials } = require('../controllers/authController');
+const { checkCredentials, setupPassword, finalizeSetup } = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
-router.post('/register', registerUser);
-router.post('/login', loginUser);
-router.post('/check', checkCredentials); // Step 1 of voice-gated login: validates creds, returns temp token
+router.post('/check', checkCredentials); // Initiates standard or setup pipelines
+router.post('/setup/password', protect, setupPassword);
+router.post('/setup/finalize', protect, finalizeSetup);
 
 module.exports = router;
-

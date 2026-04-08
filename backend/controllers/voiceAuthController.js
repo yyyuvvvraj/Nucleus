@@ -149,6 +149,7 @@ const voiceLogin = async (req, res) => {
                     _id: user._id, name: user.name, email: user.email,
                     enrollment_number: user.enrollment_number,
                     branch: user.branch, semester: user.semester,
+                    role: user.role,
                 },
                 token: generateToken(user._id),
                 similarity_score: result.similarity_score,
@@ -202,6 +203,7 @@ const voiceLoginVerify = async (req, res) => {
                 enrollment_number: user.enrollment_number,
                 branch: user.branch,
                 semester: user.semester,
+                role: user.role,
                 token: generateToken(user._id),         // full 30-day session token
                 similarity_score: result.similarity_score,
                 threshold_used: result.threshold_used,
