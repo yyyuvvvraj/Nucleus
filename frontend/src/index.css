@@ -79,6 +79,169 @@
   .animate-shimmer {
     animation: shimmer 1.5s infinite;
   }
+
+  /* ════════════════════════════════════════
+     LOGIN PAGE — Aurora + Glassmorphism
+  ════════════════════════════════════════ */
+
+  @keyframes aurora-shift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%       { transform: translate(30px, -20px) scale(1.05); }
+    66%       { transform: translate(-20px, 15px) scale(0.97); }
+  }
+
+  @keyframes aurora-shift-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    40%       { transform: translate(-40px, 30px) scale(1.08); }
+    70%       { transform: translate(20px, -15px) scale(0.95); }
+  }
+
+  @keyframes pulse-ring {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes proc-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .login-root {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: radial-gradient(circle at 60% 20%, #0f0f1a 0%, #07070f 100%);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .aurora-layer {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .aurora-1 {
+    width: 600px; height: 600px;
+    top: -180px; right: -100px;
+    background: radial-gradient(circle, rgba(109,40,217,0.55) 0%, transparent 70%);
+    animation: aurora-shift 10s ease-in-out infinite;
+  }
+
+  .aurora-2 {
+    width: 500px; height: 500px;
+    bottom: -150px; left: -80px;
+    background: radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%);
+    animation: aurora-shift-2 13s ease-in-out infinite;
+  }
+
+  .aurora-3 {
+    width: 350px; height: 350px;
+    top: 40%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%);
+    animation: aurora-shift 8s ease-in-out infinite 2s;
+  }
+
+  .aurora-noise {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    background: rgba(15, 15, 30, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(167, 139, 250, 0.18);
+    border-radius: 24px;
+    padding: 32px 28px;
+    box-shadow:
+      0 32px 80px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(255,255,255,0.04) inset,
+      0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+
+  .primary-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .primary-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(124,58,237,0.55);
+  }
+
+  .primary-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .enroll-btn {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+  }
+
+  .enroll-btn:hover:not(:disabled) {
+    box-shadow: 0 8px 24px rgba(16,185,129,0.55);
+  }
+
+  .ghost-btn {
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(203,213,225,0.6);
+    background: transparent;
+    transition: all 0.2s ease;
+  }
+
+  .ghost-btn:hover {
+    background: rgba(255,255,255,0.05);
+    color: rgba(203,213,225,0.9);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .processing-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(167,139,250,0.2);
+    border-top-color: #a78bfa;
+    border-radius: 50%;
+    animation: proc-spin 0.9s linear infinite;
+    margin: 0 auto;
+  }
 }
 
 @keyframes fade-in {

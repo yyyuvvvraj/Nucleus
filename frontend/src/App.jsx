@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
@@ -20,10 +20,30 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
+        {/* Public — login/register (voice-gated) */}
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Layout />}>
+
+        {/* Default: redirect root to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Protected app routes (Layout wraps sidebar + outlet) */}
+        <Route path="/dashboard" element={<Layout />}>
           <Route index element={<Dashboard />} />
+        </Route>
+        <Route path="/app" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="results" element={<Results />} />
+          <Route path="courses" element={<ComingSoon title="Courses" />} />
+          <Route path="hostel" element={<Hostel />} />
+          <Route path="mess" element={<MessMenu />} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="voice-enroll" element={<VoiceEnroll />} />
+        </Route>
+
+        {/* Legacy paths — keep old sidebar links working */}
+        <Route element={<Layout />}>
           <Route path="attendance" element={<Attendance />} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="results" element={<Results />} />
