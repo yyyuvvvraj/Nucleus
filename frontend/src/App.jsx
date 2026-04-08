@@ -1,14 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Attendance from './pages/Attendance';
-import Timetable from './pages/Timetable';
-import Results from './pages/Results';
-import Hostel from './pages/Hostel';
-import MessMenu from './pages/MessMenu';
-import Complaints from './pages/Complaints';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import Attendance from "./pages/Attendance";
+// Adding basic text pages for rest of requirements to show it works
+import Timetable from "./pages/Timetable";
+import Results from "./pages/Results";
+import Hostel from "./pages/Hostel";
+import MessMenu from "./pages/MessMenu";
+import Complaints from "./pages/Complaints";
 
-const ComingSoon = ({ title }) => <div className="p-8 text-2xl font-bold text-gray-300">{title} Module Coming Soon</div>;
+const ComingSoon = ({ title }) => (
+  <div className="p-8 text-2xl font-bold text-gray-300">
+    {title} Module Coming Soon
+  </div>
+);
 
 function App() {
   return (
@@ -16,7 +21,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="attendance" element={<Attendance />} />
+          <Route path="attendance" element={<Attendance />} />s
           <Route path="timetable" element={<Timetable />} />
           <Route path="results" element={<Results />} />
           <Route path="courses" element={<ComingSoon title="Courses" />} />
