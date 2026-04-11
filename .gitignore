@@ -64,12 +64,18 @@ venv/
 .venv/
 env/
 ENV/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+**/venv/
+**/.venv/
+**/env/
+**/ENV/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
 *.db
 *.sqlite3
+.pytest_cache/
+.ipynb_checkpoints/
 
 # ----------------------
 # Tooling caches
@@ -97,9 +103,16 @@ vite.config.ts.timestamp-*
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+*~
 
 # ----------------------
-# Project-specific temp files
+# Project-specific / Temp
 # ----------------------
 html.html
 *.wav
+*.bak
+*.tmp
+temp/
+tmp/
+
