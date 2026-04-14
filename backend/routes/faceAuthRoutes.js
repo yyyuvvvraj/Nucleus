@@ -10,7 +10,7 @@ const upload = multer({
 });
 
 // Face endpoints
-router.post('/enroll', protect, upload.single('file'), enrollFace);
+router.post('/enroll', protect, upload.array('files', 5), enrollFace);
 router.post('/login-verify', protect, upload.single('file'), faceLoginVerify);
 
 module.exports = router;

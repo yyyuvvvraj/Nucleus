@@ -78,4 +78,31 @@ const addTimetable = async (req, res) => {
     }
 };
 
-module.exports = { getStudents, addStudent, addResult, addAttendance, addTimetable };
+const bulkMarkAttendance = async (req, res) => {
+    const { studentIds, subject_name, statusMap } = req.body;
+    // statusMap: { [userId]: true/false }
+
+    try {
+        const results = [];
+        for (const userId of studentIds) {
+            let attendance = await Attendance.findOne({ userId, subject_name });
+            
+            if (!attendance) {
+                attendance = new Attendance({ userId, subject_name, total_classes: 0, attended_classes: 0 });
+            }
+
+            attendance.total_classes += 1;
+            if (statusMap[userId]) {
+                attendance.attended_classes += 1;
+            }
+            
+            await attendance.save();
+            results.push(attendance);
+        }
+        res.json({ success: true, message: `Marked attendance for ${studentIds.length} students.`, data: results });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { getStudents, addStudent, addResult, addAttendance, addTimetable, bulkMarkAttendance };

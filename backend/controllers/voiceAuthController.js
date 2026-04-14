@@ -22,8 +22,8 @@ const bufferToBlob = (fileObj) => {
 const callVoiceService = async (endpoint, formData) => {
     try {
         const response = await axios.post(`${VOICE_SERVICE_URL}${endpoint}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 30000,
+            // Let axios handle Content-Type and boundary automatically for FormData
+            timeout: 300000,
         });
         return response.data;
     } catch (error) {
@@ -171,7 +171,7 @@ const voiceLogin = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 const voiceLoginVerify = async (req, res) => {
     try {
-        const userId = req.user.id;   // decoded from temp JWT by protect middleware
+        const userId = req.user._id;   // Use _id from Mongoose document
         const file   = req.file;
 
         if (!file) return res.status(400).json({ message: 'Audio file required for voice verification' });

@@ -115,4 +115,9 @@ html.html
 *.tmp
 temp/
 tmp/
-
+face_images/
+backend/face_images/
+voice-auth-service/face_images/
+voice-auth-service/venv/
+voice-auth-service/.venv/
+voice-auth-service/__pycache__/

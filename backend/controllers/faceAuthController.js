@@ -12,8 +12,8 @@ const bufferToBlob = (fileObj) => {
 const callFaceService = async (endpoint, formData) => {
     try {
         const response = await axios.post(`${VOICE_SERVICE_URL}${endpoint}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 30000,
+            // Remove manual Content-Type header to allow axios/form-data to set the boundary correctly
+            timeout: 300000,
         });
         return response.data;
     } catch (error) {
@@ -25,10 +25,10 @@ const callFaceService = async (endpoint, formData) => {
 const enrollFace = async (req, res) => {
     try {
         const userId = req.user._id;
-        const file = req.file;
+        const files = req.files; // Expected to be an array from upload.array('files')
 
-        if (!file) {
-            return res.status(400).json({ message: 'Face image file required' });
+        if (!files || files.length === 0) {
+            return res.status(400).json({ message: 'Face image files (multiple angles) required' });
         }
 
         const user = await User.findById(userId);
@@ -36,20 +36,27 @@ const enrollFace = async (req, res) => {
 
         const formData = new FormData();
         formData.append('userId', userId.toString());
-        formData.append('file', bufferToBlob(file), file.originalname || 'face.png');
+        
+        // Append all files to the 'files' field for the Python service
+        files.forEach(file => {
+            formData.append('files', bufferToBlob(file), file.originalname || 'face.png');
+        });
 
         const result = await callFaceService('/face/enroll', formData);
 
         if (result.success) {
             user.face_enrolled = true;
-            user.face_embeddings = result.embedding || [];
-            user.face_threshold = result.threshold || 0.75;
+            // Python now returns an 'embeddings' (plural) list or a robust single embedding
+            // We'll store what Python gives us (usually the averaged result or the list)
+            user.face_embeddings = result.embedding || result.embeddings || [];
+            user.face_threshold = result.threshold || 0.70;
             user.face_updated_at = new Date();
             await user.save();
 
             res.json({
                 success: true,
-                message: 'Face enrolled successfully',
+                message: result.message || 'Face profile enrolled successfully',
+                embedding_dim: result.embedding_dim,
                 user: {
                     _id: user._id,
                     name: user.name,
@@ -66,20 +73,21 @@ const enrollFace = async (req, res) => {
 
 const faceLoginVerify = async (req, res) => {
     try {
-        const userId = req.user.id;   // decoded from temp JWT
+        const userId = req.user._id;
         const file = req.file;
 
-        if (!file) return res.status(400).json({ message: 'Face image file required for verification' });
+        if (!file) return res.status(400).json({ message: 'Face image required' });
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
         if (!user.face_enrolled || !user.face_embeddings || user.face_embeddings.length === 0) {
-            return res.status(400).json({ message: 'Face not enrolled. Please register again.' });
+            return res.status(400).json({ message: 'Face profile missing.' });
         }
 
         const formData = new FormData();
         formData.append('userId', user._id.toString());
         formData.append('file', bufferToBlob(file), file.originalname || 'login_face.png');
+        // Pass flat embedding vector — Python endpoint expects 'stored_embedding' (singular)
         formData.append('stored_embedding', JSON.stringify(user.face_embeddings));
 
         const result = await callFaceService('/face/verify', formData);
@@ -89,14 +97,13 @@ const faceLoginVerify = async (req, res) => {
                 success: true,
                 message: 'Face verified successfully.',
                 similarity_score: result.similarity_score,
-                threshold_used: result.threshold_used,
+                threshold_used: result.threshold_used
             });
         } else {
             res.status(401).json({
                 success: false,
-                message: `Face mismatch (score: ${result.similarity_score?.toFixed(3)}, threshold: ${result.threshold_used?.toFixed(3)}). Access denied.`,
-                similarity_score: result.similarity_score,
-                threshold_used: result.threshold_used,
+                message: `Face mismatch (score: ${result.similarity_score?.toFixed?.(3) ?? result.similarity_score}, threshold: ${result.threshold_used}). Access denied.`,
+                similarity_score: result.similarity_score
             });
         }
     } catch (error) {

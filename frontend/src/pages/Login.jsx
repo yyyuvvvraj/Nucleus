@@ -154,26 +154,26 @@ function CameraCapture({ onCaptureComplete, disabled }) {
   const [photo, setPhoto] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        if (!active) {
-          stream.getTracks().forEach(t => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        if (active) setError('Camera access denied or unavailable.');
+  const startCamera = async () => {
+    // Stop any existing stream first
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    };
+    } catch (err) {
+      setError('Camera access denied or unavailable.');
+    }
+  };
+
+  useEffect(() => {
     startCamera();
     return () => {
-      active = false;
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     };
   }, []);
@@ -200,6 +200,11 @@ function CameraCapture({ onCaptureComplete, disabled }) {
       const file = new File([blob], `face_${Date.now()}.png`, { type: 'image/png' });
       setPhoto(URL.createObjectURL(blob));
       setHasCaptured(true);
+      // Stop stream after capture to save resources
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
       onCaptureComplete(file);
     }, 'image/png');
   };
@@ -207,7 +212,10 @@ function CameraCapture({ onCaptureComplete, disabled }) {
   const retakePhoto = () => {
     setHasCaptured(false);
     setPhoto(null);
+    setError('');
     onCaptureComplete(null);
+    // Restart camera stream so the live feed comes back
+    startCamera();
   };
 
   return (
@@ -602,7 +610,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN STATE ---
-  const [loginStep, setLoginStep] = useState(1); // 1: credentials, 2: face, 3: voice
+  const [loginStep, setLoginStep] = useState(1); // 1: credentials, 2: face, 3: voice, 4: TOTP
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginTempToken, setLoginTempToken] = useState('');
@@ -610,13 +618,17 @@ export default function Login() {
   const [faceAuthResult, setFaceAuthResult] = useState(null);
   const [loginVoiceBlob, setLoginVoiceBlob] = useState(null);
   const [authResult, setAuthResult] = useState(null);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [totpToken, setTotpToken] = useState('');
 
   // --- SETUP STATE (isFirstLogin === true) ---
   const [isSetup, setIsSetup] = useState(false);
   const [setupStep, setSetupStep] = useState(1); // 1: password, 2: face, 3: voice
   const [setupToken, setSetupToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [setupFaceBlob, setSetupFaceBlob] = useState(null);
+  const [setupFaceBlobs, setSetupFaceBlobs] = useState([]);
+  const [currentFaceAngle, setCurrentFaceAngle] = useState(0);
+  const FACE_ANGLES = ['Center', 'Left', 'Right'];
   const [setupVoiceSamples, setSetupVoiceSamples] = useState([]);
   const [currentSample, setCurrentSample] = useState(1);
   const REQUIRED_SAMPLES = 3;
@@ -649,6 +661,7 @@ export default function Login() {
         setInfo('Welcome! As part of your first login, please establish a secure password.');
       } else {
         setLoginTempToken(data.tempToken);
+        setTwoFactorEnabled(data.twoFactorEnabled);
         setLoginStep(2);
         setInfo('Credentials verified! Now let\'s authenticate your face.');
       }
@@ -690,6 +703,31 @@ export default function Login() {
       if (data.similarity_score !== undefined) setAuthResult(data);
       if (!res.ok) throw new Error(data.message || 'Voice authentication failed');
 
+      if (twoFactorEnabled) {
+        setInfo('Voice verified! Final Step: Enter your 2FA Code.');
+        setTimeout(() => setLoginStep(4), 1500);
+      } else {
+        localStorage.setItem('nucleusToken', data.token);
+        localStorage.setItem('nucleusUser', JSON.stringify(data));
+        navigate('/app');
+      }
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
+  /* ── LOGIN: Step 4 — verify TOTP ── */
+  const handleLoginTOTP = async (e) => {
+    e.preventDefault();
+    if (totpToken.length !== 6) return setError('Invalid code');
+    setError(''); setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: loginTempToken ? JSON.parse(atob(loginTempToken.split('.')[1])).id : '', token: totpToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'MFA validation failed');
+
       localStorage.setItem('nucleusToken', data.token);
       localStorage.setItem('nucleusUser', JSON.stringify(data));
       navigate('/app');
@@ -715,14 +753,20 @@ export default function Login() {
 
   /* ── SETUP: Step 2 — enroll face ── */
   const handleSetupFace = async () => {
-    if (!setupFaceBlob) { setError('Please capture a photo first.'); return; }
+    if (setupFaceBlobs.length < FACE_ANGLES.length) { 
+        setError(`Please capture all ${FACE_ANGLES.length} angles.`); 
+        return; 
+    }
     setError(''); setLoading(true);
     try {
-      const formData = new FormData(); formData.append('file', setupFaceBlob);
+      const formData = new FormData(); 
+      setupFaceBlobs.forEach(blob => formData.append('files', blob));
+      
       const res = await fetch(`${API_BASE_URL}/api/auth/face/enroll`, {
         method: 'POST', headers: { 'Authorization': `Bearer ${setupToken}` }, body: formData,
       });
-      if (!res.ok) throw new Error('Face enrollment failed');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Face enrollment failed');
       setSetupStep(3);
       setInfo(`Face enrolled! Now record ${REQUIRED_SAMPLES} voice samples.`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
@@ -737,7 +781,8 @@ export default function Login() {
       const res = await fetch(`${API_BASE_URL}/api/auth/voice/enroll`, {
         method: 'POST', headers: { 'Authorization': `Bearer ${setupToken}` }, body: formData,
       });
-      if (!res.ok) throw new Error('Voice enrollment failed');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Voice enrollment failed');
 
       // Finalize setup
       const fRes = await fetch(`${API_BASE_URL}/api/auth/setup/finalize`, {
@@ -809,11 +854,28 @@ export default function Login() {
                   <Banner type="info" message={info} />
                   <VoiceRecorder label="Speak your passphrase" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
                   <VerificationPanel result={authResult} />
+                  {authResult?.security_alerts?.synthetic_voice && <Banner type="error" message="WARNING: Synthetic/AI-generated voice patterns detected. Verification rejected." />}
                   {error && !authResult && <Banner type="error" message={error} />}
                   <button type="button" onClick={handleLoginVoice} disabled={!loginVoiceBlob || loading} className="primary-btn">
                     {loading ? <Spinner /> : '🔐 Authenticate with Voice'}
                   </button>
                 </div>
+              )}
+
+              {loginStep === 4 && (
+                <form onSubmit={handleLoginTOTP} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#6366f1', marginBottom: '12px' }}>key</span>
+                    <h2 style={{ fontSize: '18px', color: 'white', marginBottom: '4px' }}>Two-Factor Authentication</h2>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>Enter the 6-digit code from your authenticator app.</p>
+                  </div>
+                  <Banner type="info" message={info} />
+                  <Field label="Security Code" type="text" value={totpToken} onChange={e => setTotpToken(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="000000" required />
+                  <Banner type="error" message={error} />
+                  <button type="submit" disabled={loading} className="primary-btn">
+                    {loading ? <Spinner /> : 'Verify & Login →'}
+                  </button>
+                </form>
               )}
             </>
           )}
@@ -839,12 +901,43 @@ export default function Login() {
 
               {setupStep === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <Banner type="info" message={info} />
-                  <CameraCapture onCaptureComplete={(b) => { setSetupFaceBlob(b); setInfo(''); setError(''); }} disabled={loading} />
+                  <Banner type="info" message={info || `Angle ${currentFaceAngle + 1}/${FACE_ANGLES.length}: Look ${FACE_ANGLES[currentFaceAngle]}`} />
+                  
+                  {/* Angle indicators */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                    {FACE_ANGLES.map((angle, i) => (
+                      <div key={i} style={{ 
+                        flex: 1, height: '4px', borderRadius: '2px',
+                        background: i < setupFaceBlobs.length ? '#10b981' : i === currentFaceAngle ? '#ffffff' : 'rgba(255,255,255,0.1)'
+                      }} />
+                    ))}
+                  </div>
+
+                  <CameraCapture 
+                    key={currentFaceAngle}
+                    onCaptureComplete={(b) => { 
+                        if (b) {
+                            setSetupFaceBlobs(p => [...p, b]);
+                            setInfo('');
+                            setError('');
+                        }
+                    }} 
+                    disabled={loading || setupFaceBlobs.length > currentFaceAngle} 
+                  />
+                  
                   <Banner type="error" message={error} />
-                  <button type="button" onClick={handleSetupFace} disabled={!setupFaceBlob || loading} className="primary-btn">
-                    {loading ? <Spinner /> : '👤 Enroll Face Scan'}
-                  </button>
+
+                  {setupFaceBlobs.length === currentFaceAngle + 1 && currentFaceAngle < FACE_ANGLES.length - 1 && (
+                    <button type="button" onClick={() => setCurrentFaceAngle(prev => prev + 1)} className="primary-btn">
+                      Next Angle: {FACE_ANGLES[currentFaceAngle + 1]} →
+                    </button>
+                  )}
+
+                  {setupFaceBlobs.length === FACE_ANGLES.length && (
+                    <button type="button" onClick={handleSetupFace} disabled={loading} className="primary-btn">
+                      {loading ? <Spinner /> : '👤 Enroll Multi-Angle Profile'}
+                    </button>
+                  )}
                 </div>
               )}
 

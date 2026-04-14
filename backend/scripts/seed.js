@@ -66,10 +66,10 @@ const seedDatabase = async () => {
 
         // --- Seed Attendance ---
         const attendances = [
-            { userId, subject_name: 'Data Structures', total_classes: 40, attended_classes: 36 },
-            { userId, subject_name: 'Operating Systems', total_classes: 38, attended_classes: 30 },
-            { userId, subject_name: 'Database Systems', total_classes: 42, attended_classes: 39 },
-            { userId, subject_name: 'Computer Networks', total_classes: 40, attended_classes: 34 }
+            { userId, subject_name: 'Data Structures', total_classes: 40, attended_classes: 36, percentage: (36/40)*100 },
+            { userId, subject_name: 'Operating Systems', total_classes: 38, attended_classes: 30, percentage: (30/38)*100 },
+            { userId, subject_name: 'Database Systems', total_classes: 42, attended_classes: 39, percentage: (39/42)*100 },
+            { userId, subject_name: 'Computer Networks', total_classes: 40, attended_classes: 34, percentage: (34/40)*100 }
         ];
         await Attendance.insertMany(attendances);
 

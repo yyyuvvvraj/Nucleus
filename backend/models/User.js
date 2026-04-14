@@ -20,9 +20,12 @@ const userSchema = new mongoose.Schema({
     voice_updated_at: { type: Date },
     // Face authentication fields
     face_enrolled: { type: Boolean, default: false },
-    face_embeddings: { type: [Number], default: [] }, // Single large vector
+    face_embeddings: { type: [[Number]], default: [] }, // Array of vectors for multi-angle support
     face_threshold: { type: Number, default: 0.75 },
-    face_updated_at: { type: Date }
+    face_updated_at: { type: Date },
+    // Multi-factor authentication
+    twoFactorSecret: { type: String },
+    isTwoFactorEnabled: { type: Boolean, default: false }
 }, {
     timestamps: true
 });

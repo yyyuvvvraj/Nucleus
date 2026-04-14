@@ -84,6 +84,7 @@ const checkCredentials = async (req, res) => {
             res.json({
                 isFirstLogin: false,
                 tempToken,
+                twoFactorEnabled: user.isTwoFactorEnabled || false,
                 user: {
                     _id: user._id,
                     name: user.name,

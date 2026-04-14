@@ -6,3 +6,7 @@ numpy
 scikit-learn
 soundfile
 noisereduce
+opencv-python
+deepface
+requests
+tf-keras

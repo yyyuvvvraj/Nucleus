@@ -13,26 +13,31 @@ const NAV_BY_ROLE = {
     { name: 'Attendance',     tab: 'attendance',   icon: 'event_available' },
     { name: 'Timetable',      tab: 'timetable',    icon: 'calendar_month' },
     { name: 'Hostel',         tab: 'hostel',       icon: 'hotel' },
+    { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
   director: [
     { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
     { name: 'Student List',   tab: 'students',     icon: 'group' },
     { name: 'Timetable',      tab: 'timetable',    icon: 'calendar_month' },
+    { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
   recruiter: [
     { name: 'Add Student',    tab: 'add_student',  icon: 'person_add' },
     { name: 'Student List',   tab: 'students',     icon: 'group' },
+    { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
   faculty: [
     { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
     { name: 'Student List',   tab: 'students',     icon: 'group' },
     { name: 'Grade Entry',    tab: 'results',      icon: 'grade' },
     { name: 'Attendance',     tab: 'attendance',   icon: 'event_available' },
+    { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
   warden: [
     { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
     { name: 'Student List',   tab: 'students',     icon: 'group' },
     { name: 'Hostel',         tab: 'hostel',       icon: 'hotel' },
+    { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
 };
 
@@ -53,9 +58,9 @@ export default function RoleDashboard() {
   // Add Student form
   const [genName, setGenName] = useState('');
   const [genEmail, setGenEmail] = useState('');
-  const [genBranch, setGenBranch] = useState('');
+  const [genBranch, setGenBranch] = useState('CSE');
   const [genSemester, setGenSemester] = useState('1');
-  const [genBatch, setGenBatch] = useState('');
+  const [genBatch, setGenBatch] = useState('2024');
   const [generatedCreds, setGeneratedCreds] = useState(null);
 
   // Results form
@@ -67,8 +72,7 @@ export default function RoleDashboard() {
 
   // Attendance form
   const [attSubject, setAttSubject] = useState('');
-  const [attTotal, setAttTotal] = useState('');
-  const [attAttended, setAttAttended] = useState('');
+  const [attStatusMap, setAttStatusMap] = useState({}); // { [userId]: true/false }
 
   // Timetable form
   const [timeDay, setTimeDay] = useState('Monday');
@@ -78,16 +82,43 @@ export default function RoleDashboard() {
   const [timeBranch, setTimeBranch] = useState('');
   const [timeSemester, setTimeSemester] = useState('1');
 
+  // 2FA state
+  const [mfaSecret, setMfaSecret] = useState(null);
+  const [mfaQR, setMfaQR] = useState(null);
+  const [mfaToken, setMfaToken] = useState('');
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('nucleusToken');
     const u = JSON.parse(localStorage.getItem('nucleusUser') || '{}');
     if (!token || !u.role || u.role === 'student') { navigate('/login'); return; }
     setUser(u);
+    setIs2FAEnabled(u.isTwoFactorEnabled || false);
 
     const defaultTabs = { admin: 'overview', director: 'overview', recruiter: 'add_student', faculty: 'overview', warden: 'overview' };
     setActiveTab(defaultTabs[u.role] || 'overview');
     fetchStudents(token, {});
   }, [navigate]);
+
+  // Auto-generate email based on name and year
+  useEffect(() => {
+    if (!genName) {
+      setGenEmail('');
+      return;
+    }
+    const parts = genName.trim().split(/\s+/);
+    const firstName = parts[0].toLowerCase();
+    const lastName = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+    const yearSuffix = genBatch.slice(-2);
+    
+    let generatedEmail = '';
+    if (lastName) {
+      generatedEmail = `${lastName}.${firstName}${yearSuffix}@st.niituniversity.in`;
+    } else {
+      generatedEmail = `${firstName}${yearSuffix}@st.niituniversity.in`;
+    }
+    setGenEmail(generatedEmail);
+  }, [genName, genBatch]);
 
   const fetchStudents = async (token, filters) => {
     try {
@@ -132,7 +163,7 @@ export default function RoleDashboard() {
       if (res.ok) {
         setGeneratedCreds({ email: d.email, password: d.generatedPassword, enrollment: d.enrollment_number, batch: d.batch });
         showSuccess('Student account created!');
-        setGenName(''); setGenEmail(''); setGenBranch(''); setGenBatch('');
+        setGenName(''); setGenEmail(''); setGenBranch('CSE'); setGenBatch('2024');
         fetchStudents(token, {});
       } else showError(d.message || 'Failed');
     } catch { showError('Network error'); }
@@ -153,18 +184,27 @@ export default function RoleDashboard() {
     } catch { showError('Network error'); }
   };
 
-  const submitAttendance = async (e) => {
+  const submitBulkAttendance = async (e) => {
     e.preventDefault();
-    if (!selectedStudent) return showError('Select a student');
+    if (!attSubject) return showError('Enter subject name');
+    const studentIds = students.map(s => s._id);
+    if (studentIds.length === 0) return showError('No students to mark');
+
     try {
       const token = localStorage.getItem('nucleusToken');
-      const res = await fetch(`${API_BASE_URL}/api/admin/attendance`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/attendance/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ userId: selectedStudent, subject_name: attSubject, total_classes: Number(attTotal), attended_classes: Number(attAttended) })
+        body: JSON.stringify({ studentIds, subject_name: attSubject, statusMap: attStatusMap })
       });
-      if (res.ok) { showSuccess('Attendance recorded!'); setAttSubject(''); setAttTotal(''); setAttAttended(''); }
-      else { const d = await res.json(); showError(d.message); }
+      if (res.ok) {
+        showSuccess('Bulk attendance recorded!');
+        setAttSubject('');
+        setAttStatusMap({});
+      } else {
+        const d = await res.json();
+        showError(d.message);
+      }
     } catch { showError('Network error'); }
   };
 
@@ -179,6 +219,60 @@ export default function RoleDashboard() {
       });
       if (res.ok) { showSuccess('Timetable slot added!'); setTimeSlot(''); setTimeSubject(''); setTimeFaculty(''); }
       else { const d = await res.json(); showError(d.message); }
+    } catch { showError('Network error'); }
+  };
+
+  const init2FASetup = async () => {
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/setup`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) { setMfaQR(data.qrCode); setMfaSecret(data.secret); }
+      else showError(data.message);
+    } catch { showError('Network error'); }
+  };
+
+  const confirm2FA = async () => {
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/verify-enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ token: mfaToken })
+      });
+      if (res.ok) {
+        showSuccess('Two-Factor Authentication Enabled!');
+        setIs2FAEnabled(true);
+        setMfaQR(null);
+        // Update local user object
+        const u = JSON.parse(localStorage.getItem('nucleusUser') || '{}');
+        u.isTwoFactorEnabled = true;
+        localStorage.setItem('nucleusUser', JSON.stringify(u));
+      } else {
+        const d = await res.json();
+        showError(d.message);
+      }
+    } catch { showError('Network error'); }
+  };
+
+  const disable2FA = async () => {
+    if (!window.confirm('Are you sure you want to disable 2FA? This will reduce your account security.')) return;
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/disable`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showSuccess('2FA Disabled');
+        setIs2FAEnabled(false);
+        const u = JSON.parse(localStorage.getItem('nucleusUser') || '{}');
+        u.isTwoFactorEnabled = false;
+        localStorage.setItem('nucleusUser', JSON.stringify(u));
+      }
     } catch { showError('Network error'); }
   };
 
@@ -387,13 +481,16 @@ export default function RoleDashboard() {
                     <input type="text" className={fieldCls} value={genName} onChange={e => setGenName(e.target.value)} placeholder="e.g. Aarav Sharma" required />
                   </div>
                   <div>
-                    <label className={labelCls}>Email Address</label>
-                    <input type="email" className={fieldCls} value={genEmail} onChange={e => setGenEmail(e.target.value)} placeholder="aarav@college.edu" required />
+                    <label className={labelCls}>Email Address (Auto-generated)</label>
+                    <input type="email" className={fieldCls + " opacity-70 cursor-not-allowed"} value={genEmail} readOnly placeholder="sharma.aarav25@st.niituniversity.in" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className={labelCls}>Branch</label>
-                      <input type="text" className={fieldCls} value={genBranch} onChange={e => setGenBranch(e.target.value)} placeholder="Computer Science" required />
+                      <label className={labelCls}>Course</label>
+                      <select className={fieldCls} value={genBranch} onChange={e => setGenBranch(e.target.value)} required>
+                        <option value="CSE">CSE</option>
+                        <option value="IMBA">IMBA</option>
+                      </select>
                     </div>
                     <div>
                       <label className={labelCls}>Semester</label>
@@ -403,8 +500,10 @@ export default function RoleDashboard() {
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Batch / Year</label>
-                    <input type="text" className={fieldCls} value={genBatch} onChange={e => setGenBatch(e.target.value)} placeholder="e.g. 2024-2028" />
+                    <label className={labelCls}>Year</label>
+                    <select className={fieldCls} value={genBatch} onChange={e => setGenBatch(e.target.value)} required>
+                      {['2023', '2024', '2025', '2026', '2027', '2028'].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
                   </div>
                   <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors mt-2">
                     <span className="material-symbols-outlined text-base">person_add</span>
@@ -432,7 +531,11 @@ export default function RoleDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                   <div>
                     <label className={labelCls}>Branch</label>
-                    <input type="text" className={fieldCls} value={filterBranch} onChange={e => setFilterBranch(e.target.value)} placeholder="e.g. Computer Science" />
+                    <select className={fieldCls} value={filterBranch} onChange={e => setFilterBranch(e.target.value)}>
+                      <option value="">All Branches</option>
+                      <option value="CSE">CSE</option>
+                      <option value="IMBA">IMBA</option>
+                    </select>
                   </div>
                   <div>
                     <label className={labelCls}>Semester</label>
@@ -443,7 +546,10 @@ export default function RoleDashboard() {
                   </div>
                   <div>
                     <label className={labelCls}>Batch</label>
-                    <input type="text" className={fieldCls} value={filterBatch} onChange={e => setFilterBatch(e.target.value)} placeholder="e.g. 2024-2028" />
+                    <select className={fieldCls} value={filterBatch} onChange={e => setFilterBatch(e.target.value)}>
+                      <option value="">All Batches</option>
+                      {['2023', '2024', '2025', '2026', '2027', '2028'].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={applyFilters} className="flex-1 flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3 rounded-lg transition-colors">
@@ -545,36 +651,90 @@ export default function RoleDashboard() {
           {activeTab === 'attendance' && (
             <>
               <section>
-                <h2 className="text-4xl font-bold text-primary-container tracking-tight">Attendance</h2>
-                <p className="mt-1 text-on-surface-variant">Record subject attendance for students.</p>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h2 className="text-4xl font-bold text-primary-container tracking-tight">Bulk Attendance</h2>
+                    <p className="mt-1 text-on-surface-variant font-medium">Mark attendance for an entire class at once.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => {
+                      const newMap = {};
+                      students.forEach(s => newMap[s._id] = true);
+                      setAttStatusMap(newMap);
+                    }} className="text-xs font-bold text-blue-600 hover:text-blue-500 uppercase tracking-widest">Mark All Present</button>
+                    <span className="text-outline-variant">|</span>
+                    <button onClick={() => setAttStatusMap({})} className="text-xs font-bold text-on-surface-variant hover:text-on-surface uppercase tracking-widest">Clear All</button>
+                  </div>
+                </div>
               </section>
-              <div className={cardCls + ' max-w-xl'}>
-                <form onSubmit={submitAttendance} className="space-y-4">
-                  <div>
-                    <label className={labelCls}>Student</label>
-                    <select className={fieldCls} value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)} required>
-                      <option value="">— Select Student —</option>
-                      {allStudents.map(s => <option key={s._id} value={s._id}>{s.name} ({s.enrollment_number})</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Subject</label>
-                    <input type="text" className={fieldCls} value={attSubject} onChange={e => setAttSubject(e.target.value)} required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls}>Total Classes</label>
-                      <input type="number" className={fieldCls} value={attTotal} onChange={e => setAttTotal(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Attended</label>
-                      <input type="number" className={fieldCls} value={attAttended} onChange={e => setAttAttended(e.target.value)} required />
+
+              <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-12 lg:col-span-4 space-y-4">
+                  <div className={cardCls}>
+                    <h3 className="font-bold text-on-surface mb-4">Class Details</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className={labelCls}>Subject Name</label>
+                        <input type="text" className={fieldCls} value={attSubject} onChange={e => setAttSubject(e.target.value)} placeholder="e.g. Operating Systems" required />
+                      </div>
+                      <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                        <p className="text-xs text-on-surface-variant leading-relaxed">
+                          <span className="font-bold text-primary">Pro Tip:</span> Use the filter bar at the top to select the specific branch and semester before marking attendance.
+                        </p>
+                      </div>
+                      <button onClick={submitBulkAttendance} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all shadow-md active:scale-95">
+                        <span className="material-symbols-outlined text-base">save</span>
+                        Submit Attendance
+                      </button>
                     </div>
                   </div>
-                  <button type="submit" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors">
-                    <span className="material-symbols-outlined text-base">event_available</span> Record Attendance
-                  </button>
-                </form>
+                </div>
+
+                <div className="col-span-12 lg:col-span-8">
+                  <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center justify-between">
+                      <h3 className="font-bold text-on-surface">Mark Sheets ({students.length} Students)</h3>
+                    </div>
+                    <div className="max-h-[500px] overflow-y-auto">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead className="sticky top-0 bg-surface-container-high z-10">
+                          <tr>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Name</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Enrollment</th>
+                            <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-outline-variant/10">
+                          {students.map(s => (
+                            <tr key={s._id} className="hover:bg-surface-container-low transition-colors group">
+                              <td className="px-6 py-4 font-medium">{s.name}</td>
+                              <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{s.enrollment_number}</td>
+                              <td className="px-6 py-4 text-center">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input 
+                                    type="checkbox" 
+                                    className="sr-only peer"
+                                    checked={attStatusMap[s._id] || false}
+                                    onChange={(e) => {
+                                      setAttStatusMap({ ...attStatusMap, [s._id]: e.target.checked });
+                                    }}
+                                  />
+                                  <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                  <span className="ml-3 text-xs font-bold text-on-surface-variant group-hover:text-primary transition-colors">
+                                    {attStatusMap[s._id] ? 'Present' : 'Absent'}
+                                  </span>
+                                </label>
+                              </td>
+                            </tr>
+                          ))}
+                          {students.length === 0 && (
+                            <tr><td colSpan="3" className="px-6 py-20 text-center text-on-surface-variant">No students found for current filters.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -628,17 +788,87 @@ export default function RoleDashboard() {
             </>
           )}
 
-          {/* ── HOSTEL (placeholder) ── */}
-          {activeTab === 'hostel' && (
+          {/* ── SECURITY ── */}
+          {activeTab === 'security' && (
             <>
               <section>
-                <h2 className="text-4xl font-bold text-primary-container tracking-tight">Hostel Management</h2>
-                <p className="mt-1 text-on-surface-variant">Room allocation and hostel metrics.</p>
+                <h2 className="text-4xl font-bold text-primary-container tracking-tight">Security Settings</h2>
+                <p className="mt-1 text-on-surface-variant font-medium">Protect your account with multi-factor authentication.</p>
               </section>
-              <div className={cardCls + ' flex flex-col items-center py-20 text-center'}>
-                <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-4">hotel</span>
-                <p className="text-on-surface font-bold text-lg">Hostel Module</p>
-                <p className="text-on-surface-variant text-sm mt-2">Room allocation and warden tools coming soon.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className={cardCls}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="material-symbols-outlined text-3xl text-blue-600">verified_user</span>
+                    <div>
+                      <h3 className="font-bold text-on-surface">Two-Factor Authentication (2FA)</h3>
+                      <p className="text-xs text-on-surface-variant">Standard TOTP (Google Authenticator, Authy, etc.)</p>
+                    </div>
+                  </div>
+
+                  {!is2FAEnabled ? (
+                    <div className="space-y-6">
+                      <div className="p-4 bg-blue-600/5 rounded-lg border border-blue-600/10">
+                        <p className="text-sm text-on-surface-variant leading-relaxed">
+                          2FA adds an extra layer of security to your account. In addition to your password and biometrics, you'll need to enter a 6-digit code from your authenticator app.
+                        </p>
+                      </div>
+
+                      {!mfaQR ? (
+                        <button onClick={init2FASetup} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all">
+                          <span className="material-symbols-outlined text-base">add_moderator</span>
+                          Setup 2FA Now
+                        </button>
+                      ) : (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                          <div className="flex flex-col items-center gap-4 bg-white p-4 rounded-xl border border-outline-variant">
+                            <img src={mfaQR} alt="QR Code" className="w-48 h-48" />
+                            <div className="text-center">
+                              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Secret Key</p>
+                              <code className="text-sm bg-surface-container px-3 py-1 rounded font-mono">{mfaSecret}</code>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <label className={labelCls}>Verification Code</label>
+                            <input 
+                              type="text" 
+                              className={fieldCls} 
+                              placeholder="000 000" 
+                              value={mfaToken}
+                              onChange={e => setMfaToken(e.target.value.replace(/\D/g,'').slice(0,6))}
+                            />
+                            <button onClick={confirm2FA} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg">
+                              Verify & Enable
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-green-600">check_circle</span>
+                        <p className="text-sm font-bold text-green-600">2FA is currently ACTIVE</p>
+                      </div>
+                      <p className="text-sm text-on-surface-variant">
+                        Your account is protected by an additional security layer. You can disable it here if you no longer have access to your authenticator app.
+                      </p>
+                      <button onClick={disable2FA} className="w-full flex items-center justify-center gap-2 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white font-bold py-3 rounded-lg border border-red-600/20 transition-all">
+                        <span className="material-symbols-outlined text-base">no_encryption</span>
+                        Disable 2FA
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className={cardCls + ' opacity-50'}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">history</span>
+                    <h3 className="font-bold text-on-surface">Login History</h3>
+                  </div>
+                  <p className="text-sm text-on-surface-variant">Session tracking and device management coming soon in a future security update.</p>
+                </div>
               </div>
             </>
           )}
