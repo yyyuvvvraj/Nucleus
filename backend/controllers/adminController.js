@@ -105,4 +105,59 @@ const bulkMarkAttendance = async (req, res) => {
     }
 };
 
-module.exports = { getStudents, addStudent, addResult, addAttendance, addTimetable, bulkMarkAttendance };
+const reset2FA = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        student.isTwoFactorEnabled = false;
+        student.twoFactorSecret = undefined;
+        await student.save();
+
+        res.json({ success: true, message: '2FA reset successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const resetRegistration = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        // Reset registration state
+        student.isFirstLogin = true;
+        
+        // Clear Biometrics
+        student.face_enrolled = false;
+        student.face_embeddings = [];
+        student.voice_enrolled = false;
+        student.voice_embeddings = [];
+        
+        // Reset 2FA
+        student.isTwoFactorEnabled = false;
+        student.twoFactorSecret = undefined;
+
+        // Restore initial password if we have it
+        if (student.initialPassword) {
+            student.password = student.initialPassword;
+        }
+
+        await student.save();
+
+        res.json({ success: true, message: 'Student registration reset successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { 
+    getStudents, 
+    addStudent, 
+    addResult, 
+    addAttendance, 
+    addTimetable, 
+    bulkMarkAttendance,
+    reset2FA,
+    resetRegistration 
+};

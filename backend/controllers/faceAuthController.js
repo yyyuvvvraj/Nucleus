@@ -93,11 +93,17 @@ const faceLoginVerify = async (req, res) => {
         const result = await callFaceService('/face/verify', formData);
 
         if (result.authenticated) {
+            // Conditional MFA logic: random challenge OR weak match (0.80 - 0.85)
+            const isWeakMatch = result.similarity_score >= 0.80 && result.similarity_score <= 0.85;
+            const randomChallenge = Math.random() < 0.5; // 50% chance
+            const mfaRequired = user.isTwoFactorEnabled && (isWeakMatch || randomChallenge);
+
             res.json({
                 success: true,
-                message: 'Face verified successfully.',
+                message: mfaRequired ? 'Face verified. MFA challenge triggered.' : 'Face verified successfully.',
                 similarity_score: result.similarity_score,
-                threshold_used: result.threshold_used
+                threshold_used: result.threshold_used,
+                mfaRequired: mfaRequired
             });
         } else {
             res.status(401).json({

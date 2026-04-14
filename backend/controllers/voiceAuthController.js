@@ -194,9 +194,14 @@ const voiceLoginVerify = async (req, res) => {
         const result = await callVoiceService('/voice/verify', formData);
 
         if (result.authenticated) {
+            // Conditional MFA logic: random challenge OR weak match (0.80 - 0.85)
+            const isWeakMatch = result.similarity_score >= 0.80 && result.similarity_score <= 0.85;
+            const randomChallenge = Math.random() < 0.5; // 50% chance
+            const mfaRequired = user.isTwoFactorEnabled && (isWeakMatch || randomChallenge);
+
             res.json({
                 success: true,
-                message: 'Voice verified. Login successful.',
+                message: mfaRequired ? 'Voice verified. MFA challenge triggered.' : 'Voice verified. Login successful.',
                 _id: user._id,
                 name: user.name,
                 email: user.email,
@@ -204,10 +209,11 @@ const voiceLoginVerify = async (req, res) => {
                 branch: user.branch,
                 semester: user.semester,
                 role: user.role,
-                token: generateToken(user._id),         // full 30-day session token
+                token: generateToken(user._id),         // full 30-day session token (may be overridden by frontend if mfaRequired is true)
                 similarity_score: result.similarity_score,
                 threshold_used: result.threshold_used,
                 individual_scores: result.individual_scores,
+                mfaRequired: mfaRequired
             });
         } else {
             res.status(401).json({

@@ -24,6 +24,7 @@ const checkCredentials = async (req, res) => {
                 semester: user.semester,
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
+                twoFactorEnabled: user.isTwoFactorEnabled || false,
                 token: generateToken(user._id)
             });
         }
@@ -135,4 +136,18 @@ const finalizeSetup = async (req, res) => {
     }
 }
 
-module.exports = { checkCredentials, setupPassword, finalizeSetup };
+const verifyPassword = async (req, res) => {
+    const { password } = req.body;
+    try {
+        const user = await User.findById(req.user._id);
+        if (user && (await user.matchPassword(password))) {
+            res.json({ success: true, message: 'Password verified' });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid password' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { checkCredentials, setupPassword, finalizeSetup, verifyPassword };

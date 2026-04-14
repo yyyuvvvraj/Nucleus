@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
+import IdleDetector from './components/IdleDetector';
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
 import Timetable from './pages/Timetable';
@@ -21,13 +22,17 @@ const AccessHub = () => {
     const user = JSON.parse(localStorage.getItem('nucleusUser') || '{}');
     if (!user.role) return <Navigate to="/login" replace />;
 
-    // Hierarchy roles → dedicated Command Center (no child routes needed)
-    if (['admin', 'director', 'recruiter', 'faculty', 'instructor', 'warden'].includes(user.role)) {
-      return <RoleDashboard />;
-    }
+    // Wrap authenticated content with IdleDetector
+    const content = (() => {
+      // Hierarchy roles → dedicated Command Center
+      if (['admin', 'director', 'recruiter', 'faculty', 'instructor', 'warden'].includes(user.role)) {
+        return <RoleDashboard />;
+      }
+      // Students → standard portal layout with sidebar
+      return <Layout><Outlet /></Layout>;
+    })();
 
-    // Students → standard portal layout with sidebar
-    return <Layout><Outlet /></Layout>;
+    return <IdleDetector>{content}</IdleDetector>;
   } catch {
     return <Navigate to="/login" replace />;
   }
