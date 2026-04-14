@@ -620,6 +620,9 @@ export default function Login() {
   const [authResult, setAuthResult] = useState(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [totpToken, setTotpToken] = useState('');
+  const [mfaQrCode, setMfaQrCode] = useState('');
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [mfaTriggeredByFace, setMfaTriggeredByFace] = useState(false);
 
   // --- SETUP STATE (isFirstLogin === true) ---
   const [isSetup, setIsSetup] = useState(false);
@@ -648,9 +651,16 @@ export default function Login() {
       if (!res.ok) throw new Error(data.message || 'Invalid credentials');
       
       if (data.bypass) {
-        localStorage.setItem('nucleusToken', data.token);
-        localStorage.setItem('nucleusUser', JSON.stringify(data));
-        navigate('/app');
+        if (!data.twoFactorEnabled && data.role === 'student') {
+          setLoginTempToken(data.token);
+          setLoginStep(5);
+          setInfo('Security Bypass used. However, MFA Setup is still required for your account.');
+          handleInitiateMFASetup(data.token);
+        } else {
+          localStorage.setItem('nucleusToken', data.token);
+          localStorage.setItem('nucleusUser', JSON.stringify(data));
+          navigate('/app');
+        }
         return;
       }
 
@@ -685,6 +695,10 @@ export default function Login() {
       if (data.similarity_score !== undefined) setFaceAuthResult(data);
       if (!res.ok) throw new Error(data.message || 'Face authentication failed');
 
+      if (data.mfaRequired) {
+        setMfaTriggeredByFace(true);
+      }
+
       setInfo('Face verified! Now speak into your microphone to verify your voice.');
       setTimeout(() => { setLoginStep(3); setInfo('Speak your passphrase or say anything.'); }, 2000);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
@@ -703,9 +717,14 @@ export default function Login() {
       if (data.similarity_score !== undefined) setAuthResult(data);
       if (!res.ok) throw new Error(data.message || 'Voice authentication failed');
 
-      if (twoFactorEnabled) {
-        setInfo('Voice verified! Final Step: Enter your 2FA Code.');
-        setTimeout(() => setLoginStep(4), 1500);
+      if (data.mfaRequired || mfaTriggeredByFace) {
+        setInfo('Biometric match was weak or additional verification required. Enter 2FA Code.');
+        setLoginStep(4);
+      } else if (!twoFactorEnabled && data.role === 'student') {
+        // Trigger MFA setup for students who haven't enabled it
+        setLoginStep(5);
+        setInfo('Security Upgrade: Please set up Two-Factor Authentication.');
+        handleInitiateMFASetup(data.token); // Optional: if we want to pre-fetch QR
       } else {
         localStorage.setItem('nucleusToken', data.token);
         localStorage.setItem('nucleusUser', JSON.stringify(data));
@@ -732,6 +751,61 @@ export default function Login() {
       localStorage.setItem('nucleusUser', JSON.stringify(data));
       navigate('/app');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
+  /* ── LOGIN: Step 5 — Setup MFA ── */
+  const handleInitiateMFASetup = async (tempTokenOverride) => {
+    const activeToken = tempTokenOverride || loginTempToken;
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/setup`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${activeToken}` }
+      });
+      const data = await res.json();
+      console.log('MFA Setup Response:', data);
+      
+      if (res.ok) {
+        setMfaQrCode(data.qrCode);
+        setMfaSecret(data.secret);
+      } else {
+        setError(data.message || 'Failed to initialize MFA');
+      }
+    } catch (err) {
+      console.error('MFA Setup Error:', err);
+      setError('Could not connect to MFA service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyMFASetup = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/2fa/verify-enable`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${loginTempToken}` 
+        },
+        body: JSON.stringify({ token: totpToken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'MFA verification failed');
+      
+      setInfo('MFA enabled! Redirecting...');
+      
+      // Auto-login using the token returned from verify-enable
+      localStorage.setItem('nucleusToken', data.token);
+      localStorage.setItem('nucleusUser', JSON.stringify(data.user || data));
+      navigate('/app');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── SETUP: Step 1 — change password ── */
@@ -793,7 +867,16 @@ export default function Login() {
 
       localStorage.setItem('nucleusToken', FinalData.token);
       localStorage.setItem('nucleusUser', JSON.stringify(FinalData));
-      navigate('/app');
+      
+      if (FinalData.role === 'student') {
+        setIsSetup(false);
+        setLoginStep(5);
+        setLoginTempToken(FinalData.token);
+        setInfo('Account setup successful! Final step: Set up Two-Factor Authentication.');
+        handleInitiateMFASetup(FinalData.token);
+      } else {
+        navigate('/app');
+      }
     } catch(err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -876,6 +959,52 @@ export default function Login() {
                     {loading ? <Spinner /> : 'Verify & Login →'}
                   </button>
                 </form>
+              )}
+              
+              {loginStep === 5 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                    <h2 style={{ fontSize: '20px', color: 'white', fontWeight: 600 }}>Secure Your Account</h2>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                      Scan this QR code with Google Authenticator or Authy to enable Two-Factor Authentication.
+                    </p>
+                  </div>
+
+                  {mfaQrCode ? (
+                    <div style={{ 
+                      padding: '16px', 
+                      background: 'white', 
+                      borderRadius: '16px', 
+                      boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)' 
+                    }}>
+                      <img src={mfaQrCode} alt="MFA QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px' }}>
+                      <Spinner />
+                    </div>
+                  )}
+
+                  <div style={{ width: '100%', textAlign: 'left' }}>
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', textAlign: 'center' }}>
+                      Can't scan? Use code: <code style={{ color: 'white', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{mfaSecret}</code>
+                    </p>
+                    <form onSubmit={handleVerifyMFASetup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <Field 
+                        label="Verification Code" 
+                        type="text" 
+                        value={totpToken} 
+                        onChange={e => setTotpToken(e.target.value.replace(/\D/g,'').slice(0,6))} 
+                        placeholder="000000" 
+                        required 
+                      />
+                      <Banner type="error" message={error} />
+                      <button type="submit" disabled={loading || !totpToken} className="primary-btn">
+                        {loading ? <Spinner /> : '🚀 Enable & Finalize Login'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
               )}
             </>
           )}

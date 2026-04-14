@@ -276,6 +276,42 @@ export default function RoleDashboard() {
     } catch { showError('Network error'); }
   };
 
+  const handleReset2FA = async (studentId) => {
+    if (!window.confirm('Reset 2FA for this student? They will be able to login with just their password.')) return;
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/student/${studentId}/reset-2fa`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showSuccess('MFA reset for student');
+        fetchStudents(token, { branch: filterBranch, semester: filterSemester, batch: filterBatch });
+      } else {
+        const d = await res.json();
+        showError(d.message);
+      }
+    } catch { showError('Network error'); }
+  };
+
+  const handleResetRegistration = async (studentId) => {
+    if (!window.confirm('WARNING: This will clear ALL biometric data (Face/Voice) and reset the student to "First Login" status. Continue?')) return;
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/student/${studentId}/reset-registration`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showSuccess('Student registration reset');
+        fetchStudents(token, { branch: filterBranch, semester: filterSemester, batch: filterBatch });
+      } else {
+        const d = await res.json();
+        showError(d.message);
+      }
+    } catch { showError('Network error'); }
+  };
+
   if (!user.role) return (
     <div className="min-h-screen bg-surface flex items-center justify-center">
       <div className="flex items-center gap-3 text-on-surface-variant">
@@ -575,6 +611,7 @@ export default function RoleDashboard() {
                       <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Batch</th>
                       <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Initial Pass</th>
                       <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
+                      <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/10">
@@ -593,6 +630,24 @@ export default function RoleDashboard() {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.isFirstLogin ? 'bg-amber-500/10 text-amber-600' : 'bg-green-500/10 text-green-600'}`}>
                             {s.isFirstLogin ? 'Pending Setup' : 'Active'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => handleReset2FA(s._id)}
+                              className="p-1.5 text-amber-600 hover:bg-amber-500/10 rounded-lg transition-colors"
+                              title="Reset 2FA"
+                            >
+                              <span className="material-symbols-outlined text-sm">lock_reset</span>
+                            </button>
+                            <button 
+                              onClick={() => handleResetRegistration(s._id)}
+                              className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                              title="Reset Full Registration"
+                            >
+                              <span className="material-symbols-outlined text-sm">restart_alt</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
