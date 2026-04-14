@@ -1,89 +1,252 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Optional
 import numpy as np
+import json
+import os
 
 from utils.audio_processing import extract_mfcc
+from utils.face_processing import extract_face_embedding, calculate_face_similarity
 from utils.similarity import calculate_similarity
 
 app = FastAPI(title="Voice Biometric Authentication API")
 
-# Configure CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Simulated in-memory database to avoid direct MongoDB coupling for this microservice.
-# Format: { "userId": [float, float, ...] }
-# In a real scenario, these embeddings would be returned to your MERN backend and saved in MongoDB.
+# In-memory fallback for the enroll→verify same-session path.
+# The MERN backend now also persists embeddings in MongoDB and passes them
+# back on verify, so this service is effectively stateless across restarts.
 db_embeddings = {}
+
+
+def calculate_adaptive_threshold(embeddings_list):
+    """
+    Compute a conservative similarity threshold from enrollment samples.
+    Uses mean - 1.0*std, clamped to [0.75, 0.95].
+    The higher minimum (0.75 vs old 0.50) prevents random audio from passing.
+    """
+    if len(embeddings_list) < 2:
+        return 0.80  # single-sample default — strict
+
+    similarities = []
+    for i in range(len(embeddings_list)):
+        for j in range(i + 1, len(embeddings_list)):
+            sim = calculate_similarity(
+                np.array(embeddings_list[i]), np.array(embeddings_list[j])
+            )
+            similarities.append(sim)
+
+    if not similarities:
+        return 0.80
+
+    mean_sim = float(np.mean(similarities))
+    std_sim  = float(np.std(similarities))
+
+    # Conservative: require at least 75% of the intra-enrollment similarity
+    threshold = mean_sim - (1.0 * std_sim)
+    return float(np.clip(threshold, 0.75, 0.95))
+
 
 @app.post("/voice/enroll")
 async def enroll_voice(
     userId: str = Form(...),
-    files: List[UploadFile] = File(...)
+    files: List[UploadFile] = File(...),
 ):
-    if not files or len(files) == 0:
+    if not files:
         raise HTTPException(status_code=400, detail="No audio files provided.")
-    
+
     embeddings = []
+    synthetic_detected = False
     
     for file in files:
-        if file.filename == "":
+        if not file.filename:
             continue
         try:
             content = await file.read()
-            mfcc_mean = extract_mfcc(content)
-            embeddings.append(mfcc_mean)
+            result = extract_mfcc(content)
+            embeddings.append(result["embedding"].tolist())
+            if result["is_synthetic"]:
+                synthetic_detected = True
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error processing file {file.filename}: {str(e)}")
-            
+            print(f"ERROR in /voice/enroll for user {userId}: {str(e)}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error processing file {file.filename}: {str(e)}"
+            )
+
     if not embeddings:
-         raise HTTPException(status_code=400, detail="Failed to extract features from any audio file.")
-         
-    # Generate final voice embedding via mean aggregation
-    final_embedding = np.mean(embeddings, axis=0)
-    
-    # Save the aggregated vector permanently (in DB). No raw audio is saved.
-    db_embeddings[userId] = final_embedding.tolist()
-    
+        raise HTTPException(status_code=400, detail="Failed to extract features.")
+
+    # Store in-memory for same-session fallback
+    db_embeddings[userId] = embeddings
+    threshold = calculate_adaptive_threshold(embeddings)
+
     return {
         "success": True,
         "message": "Voice enrolled successfully.",
         "userId": userId,
-        "embedding": db_embeddings[userId]
+        "sample_count": len(embeddings),
+        "adaptive_threshold": round(threshold, 4),
+        "embedding": embeddings,
+        "security_check": {
+            "synthetic_voice_detected": synthetic_detected
+        }
     }
+
 
 @app.post("/voice/verify")
 async def verify_voice(
     userId: str = Form(...),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    stored_embeddings: Optional[str] = Form(None),
 ):
-    if userId not in db_embeddings:
-        raise HTTPException(status_code=404, detail="User not found or not enrolled.")
-        
+    resolved_embeddings = None
+    if stored_embeddings:
+        try:
+            parsed = json.loads(stored_embeddings)
+            if parsed and isinstance(parsed, list) and len(parsed) > 0:
+                resolved_embeddings = parsed
+        except Exception:
+            pass
+
+    if resolved_embeddings is None:
+        if userId not in db_embeddings:
+            raise HTTPException(status_code=404, detail="User not found.")
+        resolved_embeddings = db_embeddings[userId]
+
     try:
         content = await file.read()
-        new_embedding = extract_mfcc(content)
+        result = extract_mfcc(content)
+        new_embedding = result["embedding"]
+        is_synthetic = result["is_synthetic"]
     except Exception as e:
-         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
-         
-    stored_embedding = np.array(db_embeddings[userId])
+        raise HTTPException(status_code=400, detail=str(e))
+
+    stored_np = [np.array(emb) for emb in resolved_embeddings]
     
-    # Calculate Cosine Similarity
-    similarity = calculate_similarity(stored_embedding, new_embedding)
+    if stored_np and stored_np[0].shape != new_embedding.shape:
+        raise HTTPException(status_code=400, detail="Voice ID out of date. Please re-enroll.")
+
+    similarities = [calculate_similarity(s, new_embedding) for s in stored_np]
+    max_similarity = max(similarities) if similarities else 0.0
+    threshold = calculate_adaptive_threshold(resolved_embeddings)
     
-    # Check against the matching threshold
-    threshold = 0.85
-    is_authenticated = similarity > threshold
-    
+    # Security Policy: Synthetic voice instantly fails verification
+    is_authenticated = (max_similarity >= threshold) and not is_synthetic
+
     return {
         "success": True,
         "userId": userId,
-        "similarity_score": round(similarity, 4),
-        "authenticated": bool(is_authenticated) # Ensuring a native Python boolean is returned
+        "similarity_score": round(max_similarity, 4),
+        "authenticated": bool(is_authenticated),
+        "threshold_used": round(threshold, 4),
+        "security_alerts": {
+            "synthetic_voice": is_synthetic
+        },
+        "individual_scores": [round(float(s), 4) for s in similarities]
     }
+
+
+@app.post("/face/enroll")
+async def enroll_face(
+    userId: str = Form(...),
+    files: List[UploadFile] = File(...),
+):
+    """
+    Enroll a face: extract embeddings from multiple images (different angles)
+    and return the averaged vector to be stored in MongoDB.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No images provided.")
+
+    os.makedirs("face_images", exist_ok=True)
+    embeddings = []
+
+    for file in files:
+        try:
+            content = await file.read()
+            if not content:
+                continue
+
+            # Save each angle for reference
+            clean_filename = file.filename.replace(" ", "_") if file.filename else "face.jpg"
+            save_path = f"face_images/{userId}_{clean_filename}"
+            with open(save_path, "wb") as f:
+                f.write(content)
+
+            # Extract embedding (now returns plain np.ndarray)
+            emb = extract_face_embedding(content, model_name="Facenet512")
+            embeddings.append(emb)
+        except Exception as e:
+            # If one angle fails but others pass, we might still proceed,
+            # but usually it's better to fail fast for enrollment.
+            raise HTTPException(status_code=400, detail=f"Error processing {file.filename}: {str(e)}")
+
+    if not embeddings:
+        raise HTTPException(status_code=400, detail="Failed to extract features from any image.")
+
+    # Average the embeddings for a robust profile
+    averaged_embedding = np.mean(embeddings, axis=0)
+    
+    # Normalize the averaged vector
+    averaged_embedding = averaged_embedding / (np.linalg.norm(averaged_embedding) + 1e-10)
+
+    return {
+        "success": True,
+        "message": f"Face enrolled successfully with {len(embeddings)} angles.",
+        "userId": userId,
+        "embedding": averaged_embedding.tolist(),
+        "embedding_dim": int(averaged_embedding.shape[0]),
+        "threshold": 0.70
+    }
+
+
+@app.post("/face/verify")
+async def verify_face(
+    userId: str = Form(...),
+    file: UploadFile = File(...),
+    stored_embedding: str = Form(...),   # JSON array (flat vector) from MongoDB
+):
+    """
+    Verify a live face snapshot against the enrolled facial embedding.
+    """
+    try:
+        enrolled_emb = np.array(json.loads(stored_embedding), dtype=np.float32)
+        if enrolled_emb.size == 0:
+            raise HTTPException(status_code=400, detail="Stored embedding is empty. Please re-enroll your face.")
+
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="No image data received for verification.")
+
+        # extract_face_embedding returns a plain np.ndarray
+        live_emb = extract_face_embedding(content, model_name="Facenet512")
+
+        # Cosine similarity via the dedicated helper
+        similarity = calculate_face_similarity(enrolled_emb, live_emb)
+
+        threshold = 0.70   # Slightly relaxed from 0.75 to handle lighting/angle variation
+        is_authenticated = similarity >= threshold
+
+        return {
+            "success": True,
+            "userId": userId,
+            "similarity_score": round(float(similarity), 4),
+            "authenticated": bool(is_authenticated),
+            "threshold_used": threshold
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error during face verification: {str(e)}")
+
+
+

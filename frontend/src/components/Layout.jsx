@@ -1,7 +1,23 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 
 const Layout = () => {
+  const navigate = useNavigate();
+
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem('nucleusUser') || '{}'); }
+    catch { return {}; }
+  })();
+
+  const userName = storedUser.name || 'Student';
+  const initials = userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+  const handleLogout = () => {
+    localStorage.removeItem('nucleusToken');
+    localStorage.removeItem('nucleusUser');
+    navigate('/login');
+  };
+
   return (
     <div className="bg-surface text-on-surface min-h-screen">
       <Sidebar />
@@ -15,15 +31,24 @@ const Layout = () => {
               <input className="w-full bg-surface-container-low border-none rounded-sm py-2 pl-10 text-sm focus:ring-2 focus:ring-secondary transition-all" placeholder="Search courses, results, or resources..." type="text"/>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button className="p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-all duration-200">
               <span className="material-symbols-outlined">notifications</span>
             </button>
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
-            <div className="flex items-center gap-3 pl-2 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">Alex Rivera</span>
-              <img alt="User Profile" className="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkzh1E0Zct5FijwOkpvnpHD_NGRyvAsoMgHN5WLvhbdsMHBUGrmfF-RYqxTW1O22DyPUrJX4yeaj9prw5-B-v9yPfLczvC6qlif1-DPeC3AlfASGXg5_LloSAwBYobUhNA9FryU1FwFld1MH64SmeHByPtRyj3nLw5ddV9V1Gh25xAbK8j1xRxWst8aiTN1-daneomzS2fDmYxmOSiW0Q5STJ50ADmiFiiqMqkisHVlGigNdmJZd-CeNczZleYTwMQ-nGvZXJT0EsR"/>
+            <div className="flex items-center gap-3 pl-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">{userName}</span>
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-bold">{initials}</span>
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200"
+            >
+              <span className="material-symbols-outlined">logout</span>
+            </button>
           </div>
         </header>
         <div className="flex-1">
