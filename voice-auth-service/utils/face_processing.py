@@ -6,7 +6,15 @@ import os
 # DeepFace import — graceful fallback if not installed
 try:
     from deepface import DeepFace
+    import tensorflow as tf
     DEEPFACE_AVAILABLE = True
+    
+    # Pre-warm/Build the model at startup to allocate memory early 
+    # and prevent "OpenBLAS allocation failed" errors later.
+    print("Building Facenet512 model...")
+    DeepFace.build_model("Facenet512")
+    print("Facenet512 model ready.")
+    
 except ImportError:
     DEEPFACE_AVAILABLE = False
 

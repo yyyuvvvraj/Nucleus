@@ -623,6 +623,7 @@ export default function Login() {
   const [mfaQrCode, setMfaQrCode] = useState('');
   const [mfaSecret, setMfaSecret] = useState('');
   const [mfaTriggeredByFace, setMfaTriggeredByFace] = useState(false);
+  const [activeChallenges, setActiveChallenges] = useState({ face: '', voice: '' });
 
   // --- SETUP STATE (isFirstLogin === true) ---
   const [isSetup, setIsSetup] = useState(false);
@@ -672,8 +673,11 @@ export default function Login() {
       } else {
         setLoginTempToken(data.tempToken);
         setTwoFactorEnabled(data.twoFactorEnabled);
+        if (data.challenges) {
+          setActiveChallenges(data.challenges);
+        }
         setLoginStep(2);
-        setInfo('Credentials verified! Now let\'s authenticate your face.');
+        setInfo('Credentials verified! Please complete the randomized liveness check.');
       }
     } catch (err) {
       setError(err.message);
@@ -923,8 +927,29 @@ export default function Login() {
               {loginStep === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <Banner type="info" message={info} />
+                  
+                  {activeChallenges.face && (
+                    <div style={{ 
+                      padding: '12px', 
+                      background: 'rgba(99, 102, 241, 0.1)', 
+                      borderRadius: '8px', 
+                      border: '1px dashed #6366f1',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{ fontSize: '12px', color: '#818cf8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Liveness Challenge</p>
+                      <h3 style={{ fontSize: '18px', color: 'white' }}>
+                        {activeChallenges.face === 'blink' && '👁️ Blink Twice'}
+                        {activeChallenges.face === 'look_left' && '⬅️ Look to the Left'}
+                        {activeChallenges.face === 'look_right' && '➡️ Look to the Right'}
+                      </h3>
+                    </div>
+                  )}
+
                   <CameraCapture onCaptureComplete={(b) => { setLoginFaceBlob(b); setInfo(''); setFaceAuthResult(null); setError(''); }} disabled={loading} />
                   <VerificationPanel result={faceAuthResult} />
+                  {faceAuthResult && !faceAuthResult.liveness_verified && (
+                    <Banner type="error" message={`Liveness Check Failed: ${faceAuthResult.liveness_message || 'Action matching the challenge not detected'}`} />
+                  )}
                   {error && !faceAuthResult && <Banner type="error" message={error} />}
                   <button type="button" onClick={handleLoginFace} disabled={!loginFaceBlob || loading} className="primary-btn">
                     {loading ? <Spinner /> : '👤 Authenticate Face'}
@@ -935,8 +960,28 @@ export default function Login() {
               {loginStep === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <Banner type="info" message={info} />
-                  <VoiceRecorder label="Speak your passphrase" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
+
+                  {activeChallenges.voice && (
+                    <div style={{ 
+                      padding: '12px', 
+                      background: 'rgba(16, 185, 129, 0.1)', 
+                      borderRadius: '8px', 
+                      border: '1px dashed #10b981',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{ fontSize: '12px', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Voice Challenge</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Please speak the following sentence clearly:</p>
+                      <h3 style={{ fontSize: '16px', color: 'white', fontStyle: 'italic' }}>
+                        "{activeChallenges.voice}"
+                      </h3>
+                    </div>
+                  )}
+
+                  <VoiceRecorder label="Record Challenge Response" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
                   <VerificationPanel result={authResult} />
+                  {authResult?.security_alerts?.stt_mismatch && (
+                    <Banner type="error" message={`Verification Failed: Spoken text does not match the challenge. (Detected: "${authResult.transcription || 'unknown'}")`} />
+                  )}
                   {authResult?.security_alerts?.synthetic_voice && <Banner type="error" message="WARNING: Synthetic/AI-generated voice patterns detected. Verification rejected." />}
                   {error && !authResult && <Banner type="error" message={error} />}
                   <button type="button" onClick={handleLoginVoice} disabled={!loginVoiceBlob || loading} className="primary-btn">

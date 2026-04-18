@@ -5,9 +5,10 @@ import numpy as np
 import json
 import os
 
-from utils.audio_processing import extract_mfcc
+from utils.audio_processing import extract_mfcc, transcribe_audio, verify_text_match
 from utils.face_processing import extract_face_embedding, calculate_face_similarity
 from utils.similarity import calculate_similarity
+from utils.liveness import verify_liveness_action
 
 app = FastAPI(title="Voice Biometric Authentication API")
 
@@ -105,6 +106,7 @@ async def verify_voice(
     userId: str = Form(...),
     file: UploadFile = File(...),
     stored_embeddings: Optional[str] = Form(None),
+    expected_text: Optional[str] = Form(None),
 ):
     resolved_embeddings = None
     if stored_embeddings:
@@ -140,6 +142,15 @@ async def verify_voice(
     # Security Policy: Synthetic voice instantly fails verification
     is_authenticated = (max_similarity >= threshold) and not is_synthetic
 
+    # Content verification
+    stt_verified = True
+    transcription = ""
+    if expected_text:
+        transcription = transcribe_audio(content)
+        stt_verified = verify_text_match(expected_text, transcription)
+        if not stt_verified:
+            is_authenticated = False
+
     return {
         "success": True,
         "userId": userId,
@@ -147,9 +158,12 @@ async def verify_voice(
         "authenticated": bool(is_authenticated),
         "threshold_used": round(threshold, 4),
         "security_alerts": {
-            "synthetic_voice": is_synthetic
+            "synthetic_voice": is_synthetic,
+            "stt_mismatch": not stt_verified
         },
-        "individual_scores": [round(float(s), 4) for s in similarities]
+        "individual_scores": [round(float(s), 4) for s in similarities],
+        "transcription": transcription,
+        "expected_text": expected_text
     }
 
 
@@ -212,6 +226,7 @@ async def verify_face(
     userId: str = Form(...),
     file: UploadFile = File(...),
     stored_embedding: str = Form(...),   # JSON array (flat vector) from MongoDB
+    expected_action: Optional[str] = Form(None),
 ):
     """
     Verify a live face snapshot against the enrolled facial embedding.
@@ -234,12 +249,23 @@ async def verify_face(
         threshold = 0.70   # Slightly relaxed from 0.75 to handle lighting/angle variation
         is_authenticated = similarity >= threshold
 
+        # Liveness check
+        liveness_verified = True
+        liveness_msg = ""
+        if expected_action:
+            liveness_verified, liveness_msg = verify_liveness_action(content, expected_action)
+            if not liveness_verified:
+                is_authenticated = False
+
         return {
             "success": True,
             "userId": userId,
             "similarity_score": round(float(similarity), 4),
             "authenticated": bool(is_authenticated),
-            "threshold_used": threshold
+            "threshold_used": threshold,
+            "liveness_verified": liveness_verified,
+            "liveness_message": liveness_msg,
+            "expected_action": expected_action
         }
     except HTTPException:
         raise

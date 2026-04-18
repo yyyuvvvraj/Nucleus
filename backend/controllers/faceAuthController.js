@@ -12,8 +12,8 @@ const bufferToBlob = (fileObj) => {
 const callFaceService = async (endpoint, formData) => {
     try {
         const response = await axios.post(`${VOICE_SERVICE_URL}${endpoint}`, formData, {
-            // Remove manual Content-Type header to allow axios/form-data to set the boundary correctly
-            timeout: 300000,
+            // Reduced timeout for better UX during service failures
+            timeout: 60000,
         });
         return response.data;
     } catch (error) {
@@ -89,6 +89,11 @@ const faceLoginVerify = async (req, res) => {
         formData.append('file', bufferToBlob(file), file.originalname || 'login_face.png');
         // Pass flat embedding vector — Python endpoint expects 'stored_embedding' (singular)
         formData.append('stored_embedding', JSON.stringify(user.face_embeddings));
+        
+        // Pass the expected action for liveness detection
+        if (req.user.faceChallenge) {
+            formData.append('expected_action', req.user.faceChallenge);
+        }
 
         const result = await callFaceService('/face/verify', formData);
 

@@ -5,7 +5,7 @@ const Attendance = require('../models/Attendance');
 const Result = require('../models/Result');
 const Timetable = require('../models/Timetable');
 
-dotenv.config({ path: '../.env' }); // Adjust if your .env is elsewhere
+dotenv.config(); // Loads .env from the current working directory
 
 const seedDatabase = async () => {
     try {

@@ -9,4 +9,7 @@ noisereduce
 opencv-python
 deepface
 requests
-tf-keras
+tf-keras
+SpeechRecognition
+pydub
+mediapipe
