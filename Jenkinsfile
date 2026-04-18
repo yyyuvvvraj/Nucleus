@@ -26,7 +26,8 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    bat 'docker-compose build'
+                    bat 'docker version'
+                    bat 'docker compose build'
                 }
             }
         }
@@ -50,7 +51,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying to staging/production server...'
-                bat 'docker-compose up -d'
+                bat 'docker compose up -d'
             }
         }
     }
