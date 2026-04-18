@@ -39,9 +39,6 @@ pipeline {
         }
 
         stage('Push to Registry') {
-            when {
-                branch 'main'
-            }
             steps {
                 script {
                     echo 'Pushing images to registry...'
@@ -51,9 +48,6 @@ pipeline {
         }
 
         stage('Deploy') {
-            when {
-                branch 'main'
-            }
             steps {
                 echo 'Deploying to staging/production server...'
                 bat 'docker-compose up -d'
