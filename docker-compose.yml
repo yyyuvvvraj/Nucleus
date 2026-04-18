@@ -19,7 +19,7 @@ services:
       - "5001:5001"
     environment:
       - PORT=5001
-      - MONGO_URI=mongodb://mongodb:27017/nucleus
+      - MONGO_URI=mongodb+srv://wintersassistant_db_user:v8ja55YbVoKJyIry@nucleus.j4gevc2.mongodb.net/?appName=nucleus
       - JWT_SECRET=your_jwt_secret_here
       - VOICE_SERVICE_URL=http://voice-service:8000
     depends_on:
