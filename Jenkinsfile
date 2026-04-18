@@ -4,6 +4,8 @@ pipeline {
     environment {
         DOCKER_REGISTRY = "your-docker-registry" // Change as needed
         APP_NAME = "nucleus"
+        // Force the Docker host to the local named pipe which is standard for Windows
+        DOCKER_HOST = "npipe:////./pipe/docker_engine"
     }
 
     stages {
@@ -26,7 +28,9 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
+                    echo "Checking Docker connection..."
                     bat 'docker version'
+                    echo "Building images..."
                     bat 'docker compose build'
                 }
             }
