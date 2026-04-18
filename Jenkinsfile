@@ -16,8 +16,6 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('backend') {
-                    // sh 'npm install'
-                    // sh 'npm test'
                     echo 'Running backend tests...'
                 }
             }
@@ -34,7 +32,6 @@ pipeline {
         stage('Security Scan') {
             steps {
                 echo 'Performing security scans on images...'
-                // sh 'trivy image nucleus-backend'
             }
         }
 
@@ -42,7 +39,6 @@ pipeline {
             steps {
                 script {
                     echo 'Pushing images to registry...'
-                    // sh "docker push ${DOCKER_REGISTRY}/${APP_NAME}-backend:latest"
                 }
             }
         }
