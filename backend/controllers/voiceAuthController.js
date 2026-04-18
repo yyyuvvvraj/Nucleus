@@ -22,8 +22,8 @@ const bufferToBlob = (fileObj) => {
 const callVoiceService = async (endpoint, formData) => {
     try {
         const response = await axios.post(`${VOICE_SERVICE_URL}${endpoint}`, formData, {
-            // Let axios handle Content-Type and boundary automatically for FormData
-            timeout: 300000,
+            // Reduced timeout for better UX during service failures
+            timeout: 60000,
         });
         return response.data;
     } catch (error) {
@@ -190,6 +190,11 @@ const voiceLoginVerify = async (req, res) => {
         formData.append('file', bufferToBlob(file), file.originalname || `login_verify.wav`);
         // Pass stored MongoDB embeddings → Python does not need in-memory state
         formData.append('stored_embeddings', JSON.stringify(user.voice_embeddings));
+
+        // Pass the expected text for content verification
+        if (req.user.voiceChallenge) {
+            formData.append('expected_text', req.user.voiceChallenge);
+        }
 
         const result = await callVoiceService('/voice/verify', formData);
 

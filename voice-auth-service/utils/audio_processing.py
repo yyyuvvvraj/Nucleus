@@ -2,6 +2,9 @@ import librosa
 import numpy as np
 import io
 import soundfile as sf
+import speech_recognition as sr_lib
+from pydub import AudioSegment
+import difflib
 
 
 def detect_synthetic_voice(y, sr):
@@ -106,6 +109,43 @@ def extract_features(file_bytes: bytes, sr: int = 16000, n_mfcc: int = 40) -> di
         "is_synthetic": is_synthetic,
         "spectral_flatness": float(score)
     }
+
+def transcribe_audio(file_bytes: bytes) -> str:
+    """
+    Transcribe audio bytes to text using SpeechRecognition (Google Web API).
+    """
+    try:
+        # Convert bytes to an AudioSegment
+        audio = AudioSegment.from_file(io.BytesIO(file_bytes))
+        
+        # Speed up/Normalize or ensure it's WAV
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format="wav")
+        wav_io.seek(0)
+        
+        recognizer = sr_lib.Recognizer()
+        with sr_lib.AudioFile(wav_io) as source:
+            audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data)
+            return text.lower().strip()
+    except Exception as e:
+        print(f"STT Error: {str(e)}")
+        return ""
+
+def verify_text_match(expected: str, actual: str) -> bool:
+    """
+    Fuzzy match the expected text against the actual transcription.
+    Returns True if similarity is > 70%.
+    """
+    if not expected or not actual:
+        return False
+    
+    # Normalize
+    exp = expected.lower().strip().replace(".", "").replace(",", "")
+    act = actual.lower().strip().replace(".", "").replace(",", "")
+    
+    similarity = difflib.SequenceMatcher(None, exp, act).ratio()
+    return similarity >= 0.70
 
 # Keep old name for backwards-compat
 extract_mfcc = extract_features

@@ -76,16 +76,39 @@ const checkCredentials = async (req, res) => {
                 });
             }
 
+            // ── CHALLENGE GENERATION ──
+            const VOICE_CHALLENGES = [
+                "The sun rises in the east every morning.",
+                "Artificial intelligence is transforming our world.",
+                "Education is the most powerful weapon we can use.",
+                "The quick brown fox jumps over the lazy dog.",
+                "Programming requires patience and logical thinking."
+            ];
+            const FACE_CHALLENGES = ["blink", "look_left", "look_right"];
+            
+            const selectedVoice = VOICE_CHALLENGES[Math.floor(Math.random() * VOICE_CHALLENGES.length)];
+            const selectedFace = FACE_CHALLENGES[Math.floor(Math.random() * FACE_CHALLENGES.length)];
+
             // Temp token — expires in 5 minutes, scoped to multi-factor check stage
             const tempToken = jwt.sign(
-                { id: user._id, stage: 'multi_factor' },
+                { 
+                    id: user._id, 
+                    stage: 'multi_factor',
+                    voiceChallenge: selectedVoice,
+                    faceChallenge: selectedFace
+                },
                 process.env.JWT_SECRET || 'secret',
-                { expiresIn: '5m' }
+                { expiresIn: '10m' }
             );
+
             res.json({
                 isFirstLogin: false,
                 tempToken,
                 twoFactorEnabled: user.isTwoFactorEnabled || false,
+                challenges: {
+                    voice: selectedVoice,
+                    face: selectedFace
+                },
                 user: {
                     _id: user._id,
                     name: user.name,
