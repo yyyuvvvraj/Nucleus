@@ -1,0 +1,40 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  voice-service:
+    build: ./voice-auth-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - MONGODB_URI=mongodb://mongodb:27017/nucleus
+      - JWT_SECRET=your_jwt_secret_here
+      - VOICE_SERVICE_URL=http://voice-service:8000
+    depends_on:
+      - mongodb
+      - voice-service
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:5001/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:
