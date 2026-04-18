@@ -16,8 +16,8 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('backend') {
-                    // sh 'npm install'
-                    // sh 'npm test'
+                    // bat 'npm install'
+                    // bat 'npm test'
                     echo 'Running backend tests...'
                 }
             }
@@ -26,7 +26,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh 'docker-compose build'
+                    bat 'docker-compose build'
                 }
             }
         }
@@ -34,7 +34,7 @@ pipeline {
         stage('Security Scan') {
             steps {
                 echo 'Performing security scans on images...'
-                // sh 'trivy image nucleus-backend'
+                // bat 'trivy image nucleus-backend'
             }
         }
 
@@ -45,7 +45,7 @@ pipeline {
             steps {
                 script {
                     echo 'Pushing images to registry...'
-                    // sh "docker push ${DOCKER_REGISTRY}/${APP_NAME}-backend:latest"
+                    // bat "docker push ${DOCKER_REGISTRY}/${APP_NAME}-backend:latest"
                 }
             }
         }
@@ -56,7 +56,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to staging/production server...'
-                sh 'docker-compose up -d'
+                bat 'docker-compose up -d'
             }
         }
     }
