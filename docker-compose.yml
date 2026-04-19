@@ -6,6 +6,11 @@ services:
       - nucleus-network
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   voice-service:
     container_name: voice-service
@@ -30,8 +35,25 @@ services:
     networks:
       - nucleus-network
     depends_on:
-      - mongodb
-      - voice-service
+      mongodb:
+        condition: service_healthy
+      voice-service:
+        condition: service_started
+
+  # This new service handles seeding automatically!
+  db-seed:
+    build: ./backend
+    container_name: db-seed
+    networks:
+      - nucleus-network
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/nucleus
+    command: ["node", "scripts/seed.js"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      backend:
+        condition: service_started
 
   frontend:
     container_name: frontend

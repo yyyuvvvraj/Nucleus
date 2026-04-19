@@ -24,13 +24,9 @@ pipeline {
                     bat "docker compose down"
                     bat "docker compose up -d"
                     
-                    echo "Waiting 20 seconds for services to start..."
-                    bat "ping 127.0.0.1 -n 21 > nul"
+                    echo "Waiting 30 seconds for services and seeding to complete..."
+                    bat "ping 127.0.0.1 -n 31 > nul"
                     
-                    echo "Seeding Database..."
-                    // We changed this from capstone-backend-1 to backend
-                    bat "docker exec backend node scripts/seed.js"
-
                     echo "Verifying Connectivity..."
                     bat "curl -s http://localhost:5050/ > nul || (echo 'ERROR: Backend is not responding on 5050!' && exit 1)"
                 }
