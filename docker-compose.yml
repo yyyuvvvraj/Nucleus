@@ -1,40 +1,54 @@
 services:
   mongodb:
     image: mongo:latest
-    # ports:
-    #   - "27018:27017" # Removed to avoid host-level conflicts. Internal connection still works.
+    container_name: mongodb
+    networks:
+      - nucleus-network
     volumes:
       - mongo-data:/data/db
 
   voice-service:
+    container_name: voice-service
     build: ./voice-auth-service
     ports:
       - "8000:8000"
+    networks:
+      - nucleus-network
     environment:
       - PYTHONUNBUFFERED=1
 
   backend:
+    container_name: backend
     build: ./backend
     ports:
-      - "5050:5001" # Moved to 5050 to avoid frequent port conflicts on 5001/5002
+      - "5050:5001"
     environment:
       - PORT=5001
       - MONGO_URI=mongodb://mongodb:27017/nucleus
       - JWT_SECRET=your_jwt_secret_here
       - VOICE_SERVICE_URL=http://voice-service:8000
+    networks:
+      - nucleus-network
     depends_on:
       - mongodb
       - voice-service
 
   frontend:
+    container_name: frontend
     build: 
       context: ./frontend
       args:
         - VITE_API_URL=http://localhost:5050
     ports:
       - "3000:80"
+    networks:
+      - nucleus-network
     depends_on:
       - backend
+
+networks:
+  nucleus-network:
+    driver: bridge
 
 volumes:
   mongo-data:

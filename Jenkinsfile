@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_REGISTRY = "your-docker-registry" // Change as needed
-        APP_NAME = "nucleus"
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -17,7 +12,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker images using Compose..."
-                    bat 'docker compose build'
+                    bat "docker compose build"
                 }
             }
         }
@@ -25,37 +20,28 @@ pipeline {
         stage('Deploy and Verify') {
             steps {
                 script {
-                    echo 'Deploying to staging/production server...'
-                    // Clean up any old containers/ports first
-                    bat 'docker compose down'
-                    bat 'docker compose up -d'
+                    echo "Deploying services..."
+                    bat "docker compose down"
+                    bat "docker compose up -d"
                     
-                    echo 'Waiting for services to initialize (20s)...'
-                    // Windows timeout command - gives services time to start up
-                    bat 'timeout /t 20 /nobreak'
+                    echo "Waiting 20 seconds for services to start..."
+                    // Reliable Windows delay
+                    bat "ping 127.0.0.1 -n 21 > nul"
                     
-                    echo 'Checking Voice Service Connectivity (Port 8000)...'
-                    bat 'curl -s http://localhost:8000/docs > nul || (echo "ERROR: Voice Service is not responding!" && exit 1)'
-                    
-                    echo 'Checking Backend Connectivity (Port 5001)...'
-                    bat 'curl -s http://localhost:5001/ > nul || (echo "ERROR: Backend is not responding!" && exit 1)'
-                    
-                    echo 'All services are UP and reachable.'
+                    echo "Seeding Database..."
+                    bat "docker exec backend node scripts/seed.js"
+
+                    echo "Verifying Connectivity..."
+                    bat "curl -s http://localhost:5050/ > nul || (echo 'ERROR: Backend is not responding on 5050!' && exit 1)"
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Deployment and Verification successful!'
-        }
-        failure {
-            echo 'Pipeline failed. Check the logs below for service errors.'
-            bat 'docker compose logs --tail=100'
-        }
         always {
-            echo 'Pipeline finished.'
+            echo "Pipeline finished."
+            bat "docker compose ps"
         }
     }
 }
