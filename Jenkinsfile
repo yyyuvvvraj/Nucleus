@@ -28,7 +28,9 @@ pipeline {
         stage('Deploy and Verify') {
             steps {
                 script {
-                    echo 'Starting Docker containers...'
+                    echo 'Deploying to staging/production server...'
+                    // Clean up any old containers/ports first
+                    bat 'docker compose down'
                     bat 'docker compose up -d'
                     
                     echo 'Waiting for services to initialize (20s)...'
