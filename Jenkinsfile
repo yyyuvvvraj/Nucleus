@@ -4,9 +4,6 @@ pipeline {
     environment {
         DOCKER_REGISTRY = "your-docker-registry" // Change as needed
         APP_NAME = "nucleus"
-        // Force the Docker host to the local named pipe and a stable API version
-        DOCKER_HOST = "npipe://./pipe/docker_engine"
-        DOCKER_API_VERSION = "1.41"
     }
 
     stages {
