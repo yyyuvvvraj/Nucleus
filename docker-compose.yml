@@ -1,8 +1,8 @@
 services:
   mongodb:
     image: mongo:latest
-    ports:
-      - "27018:27017" # Changed from 27017 to 27018 to avoid conflict with local Mongo
+    # ports:
+    #   - "27018:27017" # Removed to avoid host-level conflicts. Internal connection still works.
     volumes:
       - mongo-data:/data/db
 
