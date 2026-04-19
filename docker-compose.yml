@@ -16,7 +16,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "5002:5001" # Changed from 5001 to 5002 to avoid conflict
+      - "5050:5001" # Moved to 5050 to avoid frequent port conflicts on 5001/5002
     environment:
       - PORT=5001
       - MONGO_URI=mongodb://mongodb:27017/nucleus
@@ -30,7 +30,7 @@ services:
     build: 
       context: ./frontend
       args:
-        - VITE_API_URL=http://localhost:5002/api
+        - VITE_API_URL=http://localhost:5050/api
     ports:
       - "3000:80"
     depends_on:
