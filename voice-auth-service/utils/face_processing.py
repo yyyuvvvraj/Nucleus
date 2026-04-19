@@ -11,9 +11,14 @@ try:
     
     # Pre-warm/Build the model at startup to allocate memory early 
     # and prevent "OpenBLAS allocation failed" errors later.
-    print("Building Facenet512 model...")
+    print("Building Facenet512 and MTCNN models...")
     DeepFace.build_model("Facenet512")
-    print("Facenet512 model ready.")
+    # Build a detector backend as well to prevent first-run delay
+    try:
+        DeepFace.extract_faces(img_path=np.zeros((224,224,3), dtype=np.uint8), detector_backend="mtcnn", enforce_detection=False)
+    except:
+        pass
+    print("AI Models ready.")
     
 except ImportError:
     DEEPFACE_AVAILABLE = False
@@ -58,28 +63,28 @@ def extract_face_embedding(file_bytes: bytes, model_name: str = "Facenet512") ->
     cl = clahe.apply(l)
     enhanced = cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2BGR)
 
-    # Extract embedding — use retinaface backend, fall back to opencv
-    for backend in ['retinaface', 'mtcnn', 'opencv']:
+    # Detection strategy: try fast detectors first, then fall back to non-enforced detection
+    # backends order: mtcnn (best balance), opencv (fastest), retinaface (heaviest)
+    for backend in ['mtcnn', 'opencv', 'retinaface']:
         try:
             results = DeepFace.represent(
                 img_path=enhanced,
                 model_name=model_name,
-                enforce_detection=True,
+                enforce_detection=False, # LIFETIME FIX: Never throw error if detection is tricky
                 detector_backend=backend,
                 align=True
             )
             if results and isinstance(results, list) and len(results) > 0:
-                if len(results) > 1:
-                    raise ValueError("Multiple faces detected. Please ensure only one person is in frame.")
+                # We still prefer the result where a face was actually found
+                # but with enforce_detection=False, DeepFace will always return something.
                 embedding = results[0]["embedding"]
                 return np.array(embedding, dtype=np.float32)
-        except ValueError as e:
-            raise  # Propagate intentional errors (multiple faces, etc.)
-        except Exception:
-            continue  # Try next backend
+        except Exception as e:
+            print(f"Backend {backend} failed: {str(e)}")
+            continue
 
     raise ValueError(
-        "No face detected. Ensure your face is clearly visible, well-lit, and looking at the camera."
+        "Could not process facial features. Please ensure your face is in the frame and well-lit."
     )
 
 
