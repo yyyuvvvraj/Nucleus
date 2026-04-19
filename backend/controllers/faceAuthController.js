@@ -12,13 +12,17 @@ const bufferToBlob = (fileObj) => {
 const callFaceService = async (endpoint, formData) => {
     try {
         const response = await axios.post(`${VOICE_SERVICE_URL}${endpoint}`, formData, {
-            // Reduced timeout for better UX during service failures
-            timeout: 60000,
+            // Increased timeout to handle model weight downloads on host machines
+            timeout: 120000,
         });
         return response.data;
     } catch (error) {
-        console.error('Face service error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.detail || 'Face service unavailable');
+        console.error('Face service full error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw new Error(error.response?.data?.detail || `Face service error (${error.response?.status || 'Network'}): ${error.message}`);
     }
 };
 

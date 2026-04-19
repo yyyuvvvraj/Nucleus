@@ -8,8 +8,11 @@ soundfile
 noisereduce
 opencv-python
 deepface
+mtcnn
+retina-face
 requests
 tf-keras
 SpeechRecognition
 pydub
 mediapipe
+tensorflow
