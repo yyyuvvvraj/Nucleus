@@ -25,10 +25,10 @@ pipeline {
                     bat "docker compose up -d"
                     
                     echo "Waiting 20 seconds for services to start..."
-                    // Reliable Windows delay
                     bat "ping 127.0.0.1 -n 21 > nul"
                     
                     echo "Seeding Database..."
+                    // We changed this from capstone-backend-1 to backend
                     bat "docker exec backend node scripts/seed.js"
 
                     echo "Verifying Connectivity..."
