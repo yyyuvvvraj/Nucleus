@@ -31,7 +31,7 @@ const seedDatabase = async () => {
             { name: 'Senior Faculty', email: 'faculty@college.com', password: 'admin', enrollment_number: 'FAC-01', role: 'faculty', isFirstLogin: false },
             { name: 'Hostel Warden', email: 'warden@college.com', password: 'admin', enrollment_number: 'WAR-01', role: 'warden', isFirstLogin: false },
             { name: 'Test Student', email: 'student@college.com', password: 'admin', enrollment_number: 'STU-01', branch: 'Computer Science', semester: 4, role: 'student', isFirstLogin: false },
-            { name: 'Demo Student', email: 'demo.student@college.com', password: 'demo123', enrollment_number: 'DEMO-STU-01', branch: 'Computer Science', semester: 6, role: 'student', isFirstLogin: false, voice_enrolled: true, face_enrolled: true }
+            { name: 'Demo Student', email: 'demo.student@college.com', password: 'demo123', enrollment_number: 'DEMO-STU-01', branch: 'Computer Science', semester: 6, role: 'student', isFirstLogin: false, voice_enrolled: true, face_enrolled: true, isTwoFactorEnabled: true, twoFactorSecret: 'KVKXGZTLKVKXGZTL' }
         ];
 
         const createdUsers = [];

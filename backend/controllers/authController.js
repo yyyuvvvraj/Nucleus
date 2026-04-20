@@ -68,6 +68,7 @@ const checkCredentials = async (req, res) => {
                     semester: user.semester,
                     role: user.role,
                     isFirstLogin: false,
+                    twoFactorEnabled: user.isTwoFactorEnabled || false,
                     token: generateToken(user._id)
                 });
             }

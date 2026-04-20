@@ -107,7 +107,7 @@ export default function Dashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-6">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Cumulative GPA</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Personal GPA</span>
               <div className="mt-4">
                 <span className="text-5xl font-bold text-primary tracking-tighter">
                   {gpa !== null ? gpa : '--'}
