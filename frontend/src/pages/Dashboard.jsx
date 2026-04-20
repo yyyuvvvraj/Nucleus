@@ -45,22 +45,22 @@ export default function Dashboard() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          const gradePoints = { 'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'P': 4 };
-          let totalPoints = 0;
-          let totalCredits = 0;
-          data.forEach(res => {
-            const points = gradePoints[res.grade] || (res.marks / 10);
-            const credits = res.credits || 3;
-            totalPoints += points * credits;
-            totalCredits += credits;
+          // Calculate GPA (using simplified percentage/10 logic for consistency)
+          let totalMarks = 0;
+          data.forEach(item => {
+            totalMarks += item.marks || 0;
           });
-          const calculatedGpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 0;
+          const avgPercentage = totalMarks / data.length;
+          const calculatedGpa = (avgPercentage / 10).toFixed(2);
           setGpa(calculatedGpa);
         } else {
-          setGpa(0);
+          setGpa('0.00');
         }
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        setGpa('0.00');
+      });
 
     // Fetch Today's Timetable
     fetch(`${API_BASE_URL}/api/timetable/today`, {

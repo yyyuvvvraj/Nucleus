@@ -156,6 +156,10 @@ const SleepScreen = ({ onUnlock }) => {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
+      if (res.status === 401 && data.message?.includes('not found')) {
+        setError('Your session has expired or is invalid. Please log out and back in.');
+        return;
+      }
       if (!res.ok) throw new Error(data.message || 'Invalid password');
       onUnlock();
     } catch (err) {
@@ -163,6 +167,12 @@ const SleepScreen = ({ onUnlock }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('nucleusToken');
+    localStorage.removeItem('nucleusUser');
+    window.location.href = '/login';
   };
 
   const startVoiceRecording = async () => {
@@ -265,7 +275,23 @@ const SleepScreen = ({ onUnlock }) => {
             <Lock size={32} color="white" />
           </div>
           <h2 style={{ fontSize: '24px', fontWeight: 600, color: 'white', margin: '0 0 8px' }}>Session Locked</h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Welcome back, {user.name || 'User'}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', gap: '8px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Welcome back, {user.name || 'User'}</p>
+            <button 
+              onClick={handleLogout}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#fca5a5', 
+                fontSize: '12px', 
+                cursor: 'pointer', 
+                textDecoration: 'underline',
+                padding: '0'
+              }}
+            >
+              (Not you?)
+            </button>
+          </div>
         </div>
 
         {error && (
