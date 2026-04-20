@@ -50,9 +50,11 @@ const checkCredentials = async (req, res) => {
                 });
             }
 
-            // ── STAFF ROLES: bypass biometrics, issue direct session token ──
+            // ── STAFF ROLES & DEMO STUDENT: bypass biometrics, issue direct session token ──
             const staffRoles = ['admin', 'director', 'recruiter', 'faculty', 'warden'];
-            if (staffRoles.includes(user.role)) {
+            const isDemoStudent = user.email === 'demo.student@college.com';
+            
+            if (staffRoles.includes(user.role) || isDemoStudent) {
                 return res.json({
                     bypass: true,
                     _id: user._id,
