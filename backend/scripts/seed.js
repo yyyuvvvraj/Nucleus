@@ -38,7 +38,7 @@ const seedDatabase = async () => {
         for (const u of coreUsers) {
             createdUsers.push(await User.create(u));
         }
-        console.log('Seeded the 6 core hierarchical roles with hashed passwords.');
+        console.log(`Seeded ${createdUsers.length} core hierarchical roles with hashed passwords.`);
 
         const adminUser = createdUsers.find(u => u.role === 'admin');
         const studentUsers = createdUsers.filter(u => u.role === 'student');

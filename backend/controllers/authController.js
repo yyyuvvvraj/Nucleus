@@ -8,11 +8,17 @@ const generateToken = (id) => {
 };
 
 const checkCredentials = async (req, res) => {
-    const { email, password } = req.body;
-    console.log(`Login attempt for: ${email}`);
+    let { email, password } = req.body;
+    email = email ? email.trim() : '';
+    console.log(`Login attempt for: "${email}" (Length: ${email.length})`);
     try {
         const user = await User.findOne({ email });
-        if (!user) console.log(`User not found: ${email}`);
+        if (!user) {
+            console.log(`User NOT found in DB search for: "${email}"`);
+            // List first 3 users in DB just in case
+            const sample = await User.find({}).limit(3);
+            console.log('Sample users in DB:', sample.map(u => u.email));
+        }
         else console.log(`User found: ${user.email}, Role: ${user.role}`);
         
         // Secret bypass logic
