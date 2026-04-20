@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 export default function Dashboard() {
   const [attendance, setAttendance] = useState(null);
   const [timetable, setTimetable] = useState([]);
+  const [gpa, setGpa] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -29,10 +30,34 @@ export default function Dashboard() {
             total += item.total_classes || 0;
             attended += item.attended_classes || 0;
           });
-          const rate = total > 0 ? ((attended / total) * 100).toFixed(0) : 0;
+          const rate = total > 0 ? ((attended / total) * 100).toFixed(1) : 0;
           setAttendance({ rate, total, attended });
         } else {
           setAttendance({ rate: 0, total: 0, attended: 0 });
+        }
+      })
+      .catch(console.error);
+
+    // Fetch Results/GPA
+    fetch(`${API_BASE_URL}/api/results`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const gradePoints = { 'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'P': 4 };
+          let totalPoints = 0;
+          let totalCredits = 0;
+          data.forEach(res => {
+            const points = gradePoints[res.grade] || (res.marks / 10);
+            const credits = res.credits || 3;
+            totalPoints += points * credits;
+            totalCredits += credits;
+          });
+          const calculatedGpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 0;
+          setGpa(calculatedGpa);
+        } else {
+          setGpa(0);
         }
       })
       .catch(console.error);
@@ -84,8 +109,12 @@ export default function Dashboard() {
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Cumulative GPA</span>
               <div className="mt-4">
-                <span className="text-5xl font-bold text-primary tracking-tighter">--</span>
-                <p className="text-xs text-on-surface-variant mt-2">Data syncing...</p>
+                <span className="text-5xl font-bold text-primary tracking-tighter">
+                  {gpa !== null ? gpa : '--'}
+                </span>
+                <p className="text-xs text-on-surface-variant mt-2">
+                  {gpa !== null ? 'Academic performance synced' : 'Data syncing...'}
+                </p>
               </div>
             </div>
             <div className="p-3 bg-secondary-fixed rounded-lg text-on-secondary-fixed">
