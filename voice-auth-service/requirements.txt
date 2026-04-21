@@ -11,8 +11,12 @@ deepface
 mtcnn
 retina-face
 requests
-tf-keras
+tf-keras==2.16.0
 SpeechRecognition
 pydub
 mediapipe==0.10.18
+<<<<<<< HEAD
 tensorflow
+=======
+tensorflow==2.16.1
+>>>>>>> 92444b0 (Change in requirements)
