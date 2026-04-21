@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Result = require('../models/Result');
 const Attendance = require('../models/Attendance');
 const Timetable = require('../models/Timetable');
+const Course = require('../models/Course');
+const MessMenu = require('../models/MessMenu');
 
 const getStudents = async (req, res) => {
     try {
@@ -151,6 +153,105 @@ const resetRegistration = async (req, res) => {
     }
 };
 
+// ── COURSE MANAGEMENT ──
+const getCourses = async (req, res) => {
+    try {
+        const courses = await Course.find();
+        res.json(courses);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const addCourse = async (req, res) => {
+    try {
+        const course = new Course(req.body);
+        await course.save();
+        res.status(201).json(course);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteCourse = async (req, res) => {
+    try {
+        await Course.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Course deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ── MESS MENU MANAGEMENT ──
+const getMessMenu = async (req, res) => {
+    try {
+        const menu = await MessMenu.find();
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateMessMenu = async (req, res) => {
+    try {
+        console.log('UPDATING MESS MENU. Body:', req.body);
+        const { day, breakfast, lunch, dinner, special } = req.body;
+        
+        if (!day) {
+            console.error('Day is missing in request body');
+            return res.status(400).json({ message: 'Day is required' });
+        }
+
+        let item = await MessMenu.findOne({ day });
+        if (item) {
+            item.breakfast = breakfast;
+            item.lunch = lunch;
+            item.dinner = dinner;
+            item.special = special;
+            await item.save();
+        } else {
+            item = new MessMenu({ day, breakfast, lunch, dinner, special });
+            await item.save();
+        }
+        console.log('Mess menu successfully updated for:', day);
+        res.json(item);
+    } catch (error) {
+        console.error('Error updating mess menu:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// ── HOSTEL MANAGEMENT ──
+const assignHostel = async (req, res) => {
+    try {
+        console.log('ASSIGNING HOSTEL. Body:', req.body);
+        const { userId, hostelBlock, roomNumber, hostelFeePaid, messFeePaid } = req.body;
+        
+        if (!userId) {
+            console.error('User ID is missing in hostel assignment');
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        const student = await User.findById(userId);
+        if (!student) {
+            console.error('Student not found for ID:', userId);
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        student.hostelBlock = hostelBlock;
+        student.roomNumber = roomNumber;
+        student.hostelFeePaid = hostelFeePaid;
+        student.messFeePaid = messFeePaid;
+        await student.save();
+
+        console.log('Hostel details successfully updated for student:', student.name);
+        res.json({ success: true, message: 'Hostel details updated', student });
+    } catch (error) {
+        console.error('Error assigning hostel:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = { 
     getStudents, 
     addStudent, 
@@ -159,5 +260,11 @@ module.exports = {
     addTimetable, 
     bulkMarkAttendance,
     reset2FA,
-    resetRegistration 
+    resetRegistration,
+    getCourses,
+    addCourse,
+    deleteCourse,
+    getMessMenu,
+    updateMessMenu,
+    assignHostel
 };

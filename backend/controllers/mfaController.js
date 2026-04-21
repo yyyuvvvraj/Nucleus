@@ -102,11 +102,9 @@ const verifyAndEnable2FA = async (req, res) => {
                 success: true, 
                 message: '2FA enabled successfully',
                 token: sessionToken,
-                user: {
-                    _id: user._id,
-                    name: user.name,
-                    role: user.role
-                }
+                _id: user._id,
+                name: user.name,
+                role: user.role
             });
         } else {
             res.status(400).json({ success: false, message: 'Invalid verification code. Please try again.' });
@@ -156,11 +154,9 @@ const validate2FALogin = async (req, res) => {
             res.json({
                 success: true,
                 token: sessionToken,
-                user: {
-                    _id: user._id,
-                    name: user.name,
-                    role: user.role
-                }
+                _id: user._id,
+                name: user.name,
+                role: user.role
             });
         } else {
             res.status(401).json({ success: false, message: 'Invalid 2FA token' });

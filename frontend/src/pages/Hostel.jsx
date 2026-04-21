@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Home, User, CreditCard, ShieldCheck, ChevronRight, Activity, Building, MapPin } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Hostel() {
-  return (
-    <div className="p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div className="mb-8">
-        <p className="label-md uppercase text-secondary font-semibold tracking-wider mb-1">Accommodation Services</p>
-        <h2 className="text-3xl font-bold text-primary tracking-tight">Hostel Details</h2>
-        <p className="text-on-surface-variant mt-2 text-md">Official record of your campus residence and associated services for the Academic Year 2023-24.</p>
-      </div>
+  const [hostelData, setHostelData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-      {/* Bento Grid Layout for Hostel Information */}
+  useEffect(() => {
+    const token = localStorage.getItem('nucleusToken');
+    fetch(`${API_BASE_URL}/api/hostel/my`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setHostelData(data);
+    })
+    .catch(console.error)
+    .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="p-8 text-center animate-pulse">Loading Allocation Data...</div>;
+
+  if (!hostelData || !hostelData.roomNumber) {
+    return (
+      <div className="max-w-4xl mx-auto p-12 text-center">
+        <div className="bg-surface-container-low p-10 rounded-3xl border border-outline-variant/20 shadow-sm">
+          <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+            <Home size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-on-surface">No Allocation Found</h2>
+          <p className="text-on-surface-variant mt-2 max-w-md mx-auto">
+            Your profile hasn't been assigned to a hostel room yet. Please contact the Chief Warden's office or check back later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { name, enrollment_number, hostelBlock, roomNumber, hostelFeePaid, messFeePaid } = hostelData;
+
+  return (
+    <div className="max-w-5xl mx-auto p-6 space-y-8 animate-fade-in">
+      <header>
+        <h1 className="text-4xl font-bold tracking-tight text-on-surface">Hostel Allocation</h1>
+        <p className="text-on-surface-variant">Your current residential and mess status for Academic Year 2024-25.</p>
+      </header>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Room Allocation Card */}
         <div className="md:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant/20 p-6 flex flex-col justify-between">
           <div className="flex justify-between items-start mb-6">
             <div>

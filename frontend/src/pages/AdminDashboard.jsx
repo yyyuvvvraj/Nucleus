@@ -13,6 +13,8 @@ const NAV_BY_ROLE = {
     { name: 'Attendance',     tab: 'attendance',   icon: 'event_available' },
     { name: 'Timetable',      tab: 'timetable',    icon: 'calendar_month' },
     { name: 'Hostel',         tab: 'hostel',       icon: 'hotel' },
+    { name: 'Courses',        tab: 'courses',      icon: 'school' },
+    { name: 'Mess Menu',      tab: 'mess_menu',    icon: 'restaurant' },
     { name: 'Security',       tab: 'security',     icon: 'security' },
   ],
   director: [
@@ -88,6 +90,16 @@ export default function RoleDashboard() {
   const [mfaToken, setMfaToken] = useState('');
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
+  // New Management States
+  const [courses, setCourses] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [hostelData, setHostelData] = useState([]);
+
+  // Form States
+  const [newCourse, setNewCourse] = useState({ name: '', code: '', credits: 4, faculty: '', branch: 'CSE', semester: 1 });
+  const [editMenu, setEditMenu] = useState({ day: 'Monday', breakfast: '', lunch: '', dinner: '', special: '' });
+  const [hostelAssignment, setHostelAssignment] = useState({ userId: '', hostelBlock: '', roomNumber: '', hostelFeePaid: false, messFeePaid: false });
+
   useEffect(() => {
     const token = localStorage.getItem('nucleusToken');
     const u = JSON.parse(localStorage.getItem('nucleusUser') || '{}');
@@ -98,6 +110,11 @@ export default function RoleDashboard() {
     const defaultTabs = { admin: 'overview', director: 'overview', recruiter: 'add_student', faculty: 'overview', warden: 'overview' };
     setActiveTab(defaultTabs[u.role] || 'overview');
     fetchStudents(token, {});
+    fetchCourses(token);
+    fetchMessMenu(token);
+    if (u.role === 'admin' || u.role === 'warden') {
+      fetchHostelData(token);
+    }
   }, [navigate]);
 
   // Auto-generate email based on name and year
@@ -132,6 +149,30 @@ export default function RoleDashboard() {
       });
       const data = await res.json();
       if (res.ok) { setStudents(data); if (!params.toString()) setAllStudents(data); }
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchCourses = async (token) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/courses`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setCourses(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMessMenu = async (token) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/mess-menu`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setMenuItems(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchHostelData = async (token) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/hostel/all`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setHostelData(data);
     } catch (err) { console.error(err); }
   };
 
@@ -308,6 +349,86 @@ export default function RoleDashboard() {
       } else {
         const d = await res.json();
         showError(d.message);
+      }
+    } catch { showError('Network error'); }
+  };
+
+  const submitCourse = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/courses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(newCourse)
+      });
+      if (res.ok) {
+        showSuccess('Course added successfully!');
+        setNewCourse({ name: '', code: '', credits: 4, faculty: '', branch: 'CSE', semester: 1 });
+        fetchCourses(token);
+      } else {
+        const d = await res.json();
+        showError(d.message);
+      }
+    } catch { showError('Network error'); }
+  };
+
+  const submitMessUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/mess-menu`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editMenu)
+      });
+      if (res.ok) {
+        showSuccess('Mess menu updated!');
+        fetchMessMenu(token);
+      } else {
+        const d = await res.json();
+        showError(d.message || 'Update failed');
+      }
+    } catch (err) { 
+      console.error('Mess Update Error:', err);
+      showError('Network error: ' + err.message); 
+    }
+  };
+
+  const submitHostelAssignment = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/hostel/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(hostelAssignment)
+      });
+      if (res.ok) {
+        showSuccess('Hostel details updated!');
+        fetchHostelData(token);
+        setHostelAssignment({ userId: '', hostelBlock: '', roomNumber: '', hostelFeePaid: false, messFeePaid: false });
+      } else {
+        const d = await res.json();
+        showError(d.message || 'Assignment failed');
+      }
+    } catch (err) { 
+      console.error('Hostel Update Error:', err);
+      showError('Network error: ' + err.message); 
+    }
+  };
+
+  const deleteCourseItem = async (id) => {
+    if (!window.confirm('Delete this course?')) return;
+    try {
+      const token = localStorage.getItem('nucleusToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/courses/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showSuccess('Course removed');
+        fetchCourses(token);
       }
     } catch { showError('Network error'); }
   };
@@ -923,6 +1044,247 @@ export default function RoleDashboard() {
                     <h3 className="font-bold text-on-surface">Login History</h3>
                   </div>
                   <p className="text-sm text-on-surface-variant">Session tracking and device management coming soon in a future security update.</p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── HOSTEL MANAGEMENT ── */}
+          {activeTab === 'hostel' && (
+            <>
+              <section>
+                <h2 className="text-4xl font-bold text-primary-container tracking-tight">Hostel & Housing</h2>
+                <p className="mt-1 text-on-surface-variant font-medium">Manage student room allocations and fee status.</p>
+              </section>
+
+              <div className="grid grid-cols-12 gap-8">
+                <div className="col-span-12 lg:col-span-4">
+                  <div className={cardCls}>
+                    <h3 className="font-bold text-on-surface mb-6">Assign Room</h3>
+                    <form onSubmit={submitHostelAssignment} className="space-y-4">
+                      <div>
+                        <label className={labelCls}>Select Student</label>
+                        <select className={fieldCls} value={hostelAssignment.userId} onChange={e => setHostelAssignment({...hostelAssignment, userId: e.target.value})} required>
+                          <option value="">— Choose Student —</option>
+                          {allStudents.map(s => <option key={s._id} value={s._id}>{s.name} ({s.enrollment_number})</option>)}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Block</label>
+                          <input type="text" className={fieldCls} value={hostelAssignment.hostelBlock} onChange={e => setHostelAssignment({...hostelAssignment, hostelBlock: e.target.value})} placeholder="e.g. Ganga" required />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Room No.</label>
+                          <input type="text" className={fieldCls} value={hostelAssignment.roomNumber} onChange={e => setHostelAssignment({...hostelAssignment, roomNumber: e.target.value})} placeholder="e.g. 402-B" required />
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={hostelAssignment.hostelFeePaid} onChange={e => setHostelAssignment({...hostelAssignment, hostelFeePaid: e.target.checked})} className="rounded text-blue-600" />
+                          <span className="text-sm text-on-surface-variant">Hostel Fee Paid</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={hostelAssignment.messFeePaid} onChange={e => setHostelAssignment({...hostelAssignment, messFeePaid: e.target.checked})} className="rounded text-blue-600" />
+                          <span className="text-sm text-on-surface-variant">Mess Fee Paid</span>
+                        </label>
+                      </div>
+                      <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors">Assign & Save</button>
+                    </form>
+                  </div>
+                </div>
+
+                <div className="col-span-12 lg:col-span-8">
+                  <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-surface-container-high">
+                          <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Student</th>
+                          <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Room</th>
+                          <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Hostel Fee</th>
+                          <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Mess Fee</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/10">
+                        {hostelData.map(s => (
+                          <tr key={s._id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-primary">{s.name}</p>
+                              <p className="text-[10px] text-on-surface-variant uppercase">{s.enrollment_number}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              {s.roomNumber ? (
+                                <span className="bg-blue-600/10 text-blue-600 px-2 py-1 rounded font-mono text-xs font-bold">{s.hostelBlock} / {s.roomNumber}</span>
+                              ) : (
+                                <span className="text-on-surface-variant italic text-xs">Unassigned</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-xs">
+                              {s.hostelFeePaid ? <span className="text-green-600 font-bold">✓ Paid</span> : <span className="text-red-500 font-bold">Pending</span>}
+                            </td>
+                            <td className="px-6 py-4 text-xs">
+                              {s.messFeePaid ? <span className="text-green-600 font-bold">✓ Paid</span> : <span className="text-red-500 font-bold">Pending</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── COURSE MANAGEMENT ── */}
+          {activeTab === 'courses' && (
+            <>
+              <section>
+                <h2 className="text-4xl font-bold text-primary-container tracking-tight">University Courses</h2>
+                <p className="mt-1 text-on-surface-variant font-medium">Manage the global syllabus and faculty assignments.</p>
+              </section>
+
+              <div className="grid grid-cols-12 gap-8">
+                <div className="col-span-12 lg:col-span-4">
+                  <div className={cardCls}>
+                    <h3 className="font-bold text-on-surface mb-6">Add New Course</h3>
+                    <form onSubmit={submitCourse} className="space-y-4">
+                      <div>
+                        <label className={labelCls}>Course Name</label>
+                        <input type="text" className={fieldCls} value={newCourse.name} onChange={e => setNewCourse({...newCourse, name: e.target.value})} placeholder="e.g. Data Structures" required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Course Code</label>
+                          <input type="text" className={fieldCls} value={newCourse.code} onChange={e => setNewCourse({...newCourse, code: e.target.value})} placeholder="CS101" required />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Credits</label>
+                          <input type="number" className={fieldCls} value={newCourse.credits} onChange={e => setNewCourse({...newCourse, credits: Number(e.target.value)})} required />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Faculty Name</label>
+                        <input type="text" className={fieldCls} value={newCourse.faculty} onChange={e => setNewCourse({...newCourse, faculty: e.target.value})} placeholder="Dr. Jane Doe" required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Branch</label>
+                          <select className={fieldCls} value={newCourse.branch} onChange={e => setNewCourse({...newCourse, branch: e.target.value})}>
+                            <option value="CSE">CSE</option>
+                            <option value="IMBA">IMBA</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>Semester</label>
+                          <select className={fieldCls} value={newCourse.semester} onChange={e => setNewCourse({...newCourse, semester: Number(e.target.value)})}>
+                            {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors">Create Course</button>
+                    </form>
+                  </div>
+                </div>
+
+                <div className="col-span-12 lg:col-span-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {courses.map(course => (
+                      <div key={course._id} className={cardCls + ' relative group'}>
+                        <button onClick={() => deleteCourseItem(course._id)} className="absolute top-2 right-2 p-1 text-on-surface-variant hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold bg-blue-600/10 text-blue-600 px-2 py-0.5 rounded">{course.code}</span>
+                          <span className="text-[10px] font-bold text-on-surface-variant">{course.credits} Credits</span>
+                        </div>
+                        <h4 className="font-bold text-primary">{course.name}</h4>
+                        <p className="text-xs text-on-surface-variant mb-3 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">person</span> {course.faculty}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-500">{course.branch}</span>
+                          <span className="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-500">Sem {course.semester}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {courses.length === 0 && <div className="col-span-2 py-12 text-center text-on-surface-variant italic">No courses created yet.</div>}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── MESS MENU MANAGEMENT ── */}
+          {activeTab === 'mess_menu' && (
+            <>
+              <section>
+                <h2 className="text-4xl font-bold text-primary-container tracking-tight">Mess Menu Management</h2>
+                <p className="mt-1 text-on-surface-variant font-medium">Configure the daily nutritional schedule.</p>
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className={cardCls}>
+                  <h3 className="font-bold text-on-surface mb-6">Update Daily Recipes</h3>
+                  <form onSubmit={submitMessUpdate} className="space-y-4">
+                    <div>
+                      <label className={labelCls}>Select Day</label>
+                      <select className={fieldCls} value={editMenu.day} onChange={e => setEditMenu({...editMenu, day: e.target.value})}>
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => <option key={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Breakfast</label>
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.breakfast} onChange={e => setEditMenu({...editMenu, breakfast: e.target.value})} placeholder="e.g. Idli Sambhar" required />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Lunch</label>
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.lunch} onChange={e => setEditMenu({...editMenu, lunch: e.target.value})} placeholder="e.g. Paneer Butter Masala" required />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Dinner</label>
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.dinner} onChange={e => setEditMenu({...editMenu, dinner: e.target.value})} placeholder="e.g. Mutton Curry" required />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Special Dish (Optional)</label>
+                      <input type="text" className={fieldCls} value={editMenu.special} onChange={e => setEditMenu({...editMenu, special: e.target.value})} placeholder="e.g. Classic Lasagna" />
+                    </div>
+                    <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors">Push Update</button>
+                  </form>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                  {menuItems.sort((a,b) => {
+                    const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    return order.indexOf(a.day) - order.indexOf(b.day);
+                  }).map(item => (
+                    <div key={item._id} className={cardCls + ' flex gap-6 hover:border-blue-600/30 transition-all'}>
+                      <div className="w-24 flex-shrink-0">
+                        <h4 className="font-bold text-primary">{item.day}</h4>
+                        <p className="text-[10px] text-green-600 font-bold uppercase mt-1">PUBLISHED</p>
+                      </div>
+                      <div className="flex-1 grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Breakfast</p>
+                          <p className="text-xs text-on-surface">{item.breakfast}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Lunch</p>
+                          <p className="text-xs text-on-surface">{item.lunch}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Dinner</p>
+                          <p className="text-xs text-on-surface">{item.dinner}</p>
+                        </div>
+                      </div>
+                      {item.special && (
+                        <div className="w-24 text-right">
+                          <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Special</p>
+                          <p className="text-xs font-bold text-primary">{item.special}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {menuItems.length === 0 && <div className="py-12 text-center text-on-surface-variant italic">No menu items published.</div>}
                 </div>
               </div>
             </>

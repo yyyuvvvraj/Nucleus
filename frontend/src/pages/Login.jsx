@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const FIXED_VOICE_PASSPHRASE = "My voice is my secure identity in the Nucleus Portal";
 
 /* ─────────────────────────────────────────
    Waveform visualizer component
@@ -232,13 +233,24 @@ function CameraCapture({ onCaptureComplete, disabled }) {
         boxShadow: hasCaptured ? '0 0 20px rgba(255,255,255,0.4)' : '0 0 20px rgba(255,255,255,0.1)'
       }}>
         {!hasCaptured ? (
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
-          />
+          <>
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
+            />
+            {/* Scanning Animation Overlay */}
+            <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'linear-gradient(to bottom, transparent 40%, rgba(99, 102, 241, 0.4) 50%, transparent 60%)',
+              backgroundSize: '100% 200%',
+              animation: 'scan 2s linear infinite',
+              pointerEvents: 'none'
+            }} />
+          </>
         ) : (
           <img src={photo} alt="Captured Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         )}
@@ -752,7 +764,7 @@ export default function Login() {
       if (!res.ok) throw new Error(data.message || 'MFA validation failed');
 
       localStorage.setItem('nucleusToken', data.token);
-      localStorage.setItem('nucleusUser', JSON.stringify(data));
+      localStorage.setItem('nucleusUser', JSON.stringify(data.user || data));
       navigate('/app');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
@@ -926,29 +938,16 @@ export default function Login() {
 
               {loginStep === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <Banner type="info" message={info} />
+                  <Banner type="info" message={info || 'Position your face clearly within the frame for biometric analysis.'} />
                   
-                  {activeChallenges.face && (
-                    <div style={{ 
-                      padding: '12px', 
-                      background: 'rgba(99, 102, 241, 0.1)', 
-                      borderRadius: '8px', 
-                      border: '1px dashed #6366f1',
-                      textAlign: 'center'
-                    }}>
-                      <p style={{ fontSize: '12px', color: '#818cf8', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Liveness Challenge</p>
-                      <h3 style={{ fontSize: '18px', color: 'white' }}>
-                        {activeChallenges.face === 'blink' && '👁️ Blink Twice'}
-                        {activeChallenges.face === 'look_left' && '⬅️ Look to the Left'}
-                        {activeChallenges.face === 'look_right' && '➡️ Look to the Right'}
-                      </h3>
-                    </div>
-                  )}
+                  <div style={{ textAlign: 'center', marginBottom: '-10px' }}>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 'bold', textTransform: 'uppercase' }}>Biometric Face Scan</p>
+                  </div>
 
                   <CameraCapture onCaptureComplete={(b) => { setLoginFaceBlob(b); setInfo(''); setFaceAuthResult(null); setError(''); }} disabled={loading} />
                   <VerificationPanel result={faceAuthResult} />
                   {faceAuthResult && !faceAuthResult.liveness_verified && (
-                    <Banner type="error" message={`Liveness Check Failed: ${faceAuthResult.liveness_message || 'Action matching the challenge not detected'}`} />
+                    <Banner type="error" message={`Verification Failed: ${faceAuthResult.liveness_message || 'Face detection issues'}`} />
                   )}
                   {error && !faceAuthResult && <Banner type="error" message={error} />}
                   <button type="button" onClick={handleLoginFace} disabled={!loginFaceBlob || loading} className="primary-btn">
@@ -959,28 +958,25 @@ export default function Login() {
 
               {loginStep === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <Banner type="info" message={info} />
+                  <Banner type="info" message={info || 'Please speak your secure passphrase to verify your identity.'} />
 
-                  {activeChallenges.voice && (
-                    <div style={{ 
-                      padding: '12px', 
-                      background: 'rgba(16, 185, 129, 0.1)', 
-                      borderRadius: '8px', 
-                      border: '1px dashed #10b981',
-                      textAlign: 'center'
-                    }}>
-                      <p style={{ fontSize: '12px', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Voice Challenge</p>
-                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Please speak the following sentence clearly:</p>
-                      <h3 style={{ fontSize: '16px', color: 'white', fontStyle: 'italic' }}>
-                        "{activeChallenges.voice}"
-                      </h3>
-                    </div>
-                  )}
+                  <div style={{ 
+                    padding: '16px', 
+                    background: 'rgba(16, 185, 129, 0.1)', 
+                    borderRadius: '12px', 
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ fontSize: '11px', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px' }}>Voice Passphrase</p>
+                    <h3 style={{ fontSize: '17px', color: 'white', fontStyle: 'italic', fontWeight: 500 }}>
+                      "{FIXED_VOICE_PASSPHRASE}"
+                    </h3>
+                  </div>
 
-                  <VoiceRecorder label="Record Challenge Response" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
+                  <VoiceRecorder label="Speak Passphrase" onRecordingComplete={(b) => { setLoginVoiceBlob(b); setInfo(''); setAuthResult(null); setError(''); }} />
                   <VerificationPanel result={authResult} />
                   {authResult?.security_alerts?.stt_mismatch && (
-                    <Banner type="error" message={`Verification Failed: Spoken text does not match the challenge. (Detected: "${authResult.transcription || 'unknown'}")`} />
+                    <Banner type="error" message={`Verification Failed: Spoken text did not match the required passphrase.`} />
                   )}
                   {authResult?.security_alerts?.synthetic_voice && <Banner type="error" message="WARNING: Synthetic/AI-generated voice patterns detected. Verification rejected." />}
                   {error && !authResult && <Banner type="error" message={error} />}
@@ -1117,16 +1113,28 @@ export default function Login() {
 
               {setupStep === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <Banner type="info" message={info} />
+                  <Banner type="info" message={info || 'Speak the passphrase clearly for each sample to train your Voice ID.'} />
                   
-                  {/* Sample dots progress */}
+                  <div style={{ 
+                    padding: '16px', 
+                    background: 'rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '12px', 
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px' }}>Enrollment Passphrase</p>
+                    <h3 style={{ fontSize: '16px', color: 'white', fontStyle: 'italic' }}>
+                      "{FIXED_VOICE_PASSPHRASE}"
+                    </h3>
+                  </div>
+
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                     {Array.from({ length: REQUIRED_SAMPLES }, (_, i) => (
                       <div key={i} style={{ width: '10px', height: '10px', borderRadius: '50%', background: i < setupVoiceSamples.length ? '#10b981' : i === setupVoiceSamples.length ? '#ffffff' : 'rgba(255,255,255,0.12)' }} />
                     ))}
                   </div>
 
-                  <VoiceRecorder key={currentSample} sampleIndex={currentSample} totalSamples={REQUIRED_SAMPLES} label="Speak naturally to construct baseline" onRecordingComplete={b => setSetupVoiceSamples(p => [...p, b])} disabled={setupVoiceSamples.length >= currentSample} />
+                  <VoiceRecorder key={currentSample} sampleIndex={currentSample} totalSamples={REQUIRED_SAMPLES} label="Speak Passphrase" onRecordingComplete={b => setSetupVoiceSamples(p => [...p, b])} disabled={setupVoiceSamples.length >= currentSample} />
                   <Banner type="error" message={error} />
 
                   {isSetupVoiceReady && !allSetupSamplesCollected && (

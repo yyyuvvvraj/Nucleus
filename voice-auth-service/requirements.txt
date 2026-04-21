@@ -2,7 +2,7 @@ fastapi
 uvicorn
 python-multipart
 librosa
-numpy
+numpy==1.26.4
 scikit-learn
 soundfile
 noisereduce
@@ -14,5 +14,5 @@ requests
 tf-keras
 SpeechRecognition
 pydub
-mediapipe
+mediapipe==0.10.11
 tensorflow
