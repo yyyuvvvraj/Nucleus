@@ -14,5 +14,5 @@ requests
 tf-keras
 SpeechRecognition
 pydub
-mediapipe==0.10.11
+mediapipe==0.10.18
 tensorflow
