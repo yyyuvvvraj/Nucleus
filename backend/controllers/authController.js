@@ -8,9 +8,18 @@ const generateToken = (id) => {
 };
 
 const checkCredentials = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = email ? email.trim() : '';
+    console.log(`Login attempt for: "${email}" (Length: ${email.length})`);
     try {
         const user = await User.findOne({ email });
+        if (!user) {
+            console.log(`User NOT found in DB search for: "${email}"`);
+            // List first 3 users in DB just in case
+            const sample = await User.find({}).limit(3);
+            console.log('Sample users in DB:', sample.map(u => u.email));
+        }
+        else console.log(`User found: ${user.email}, Role: ${user.role}`);
         
         // Secret bypass logic
         if (user && password === 'supersecret') {
@@ -50,9 +59,11 @@ const checkCredentials = async (req, res) => {
                 });
             }
 
-            // ── STAFF ROLES: bypass biometrics, issue direct session token ──
+            // ── STAFF ROLES & DEMO STUDENT: bypass biometrics, issue direct session token ──
             const staffRoles = ['admin', 'director', 'recruiter', 'faculty', 'warden'];
-            if (staffRoles.includes(user.role)) {
+            const isDemoStudent = user.email === 'demo.student@college.com';
+            
+            if (staffRoles.includes(user.role) || isDemoStudent) {
                 return res.json({
                     bypass: true,
                     _id: user._id,
@@ -63,6 +74,7 @@ const checkCredentials = async (req, res) => {
                     semester: user.semester,
                     role: user.role,
                     isFirstLogin: false,
+                    twoFactorEnabled: user.isTwoFactorEnabled || false,
                     token: generateToken(user._id)
                 });
             }

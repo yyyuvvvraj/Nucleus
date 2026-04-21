@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 export default function Dashboard() {
   const [attendance, setAttendance] = useState(null);
   const [timetable, setTimetable] = useState([]);
+  const [gpa, setGpa] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -29,13 +30,37 @@ export default function Dashboard() {
             total += item.total_classes || 0;
             attended += item.attended_classes || 0;
           });
-          const rate = total > 0 ? ((attended / total) * 100).toFixed(0) : 0;
+          const rate = total > 0 ? ((attended / total) * 100).toFixed(1) : 0;
           setAttendance({ rate, total, attended });
         } else {
           setAttendance({ rate: 0, total: 0, attended: 0 });
         }
       })
       .catch(console.error);
+
+    // Fetch Results/GPA
+    fetch(`${API_BASE_URL}/api/results`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Calculate GPA (using simplified percentage/10 logic for consistency)
+          let totalMarks = 0;
+          data.forEach(item => {
+            totalMarks += item.marks || 0;
+          });
+          const avgPercentage = totalMarks / data.length;
+          const calculatedGpa = (avgPercentage / 10).toFixed(2);
+          setGpa(calculatedGpa);
+        } else {
+          setGpa('0.00');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setGpa('0.00');
+      });
 
     // Fetch Today's Timetable
     fetch(`${API_BASE_URL}/api/timetable/today`, {
@@ -82,10 +107,14 @@ export default function Dashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-6">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Cumulative GPA</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Personal GPA</span>
               <div className="mt-4">
-                <span className="text-5xl font-bold text-primary tracking-tighter">--</span>
-                <p className="text-xs text-on-surface-variant mt-2">Data syncing...</p>
+                <span className="text-5xl font-bold text-primary tracking-tighter">
+                  {gpa !== null ? gpa : '--'}
+                </span>
+                <p className="text-xs text-on-surface-variant mt-2">
+                  {gpa !== null ? 'Academic performance synced' : 'Data syncing...'}
+                </p>
               </div>
             </div>
             <div className="p-3 bg-secondary-fixed rounded-lg text-on-secondary-fixed">
