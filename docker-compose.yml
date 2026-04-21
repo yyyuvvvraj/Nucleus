@@ -29,8 +29,8 @@ services:
       - "5050:5001"
     environment:
       - PORT=5001
-      - MONGO_URI=mongodb://mongodb:27017/nucleus
-      - JWT_SECRET=your_jwt_secret_here
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/nucleus}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
       - VOICE_SERVICE_URL=http://voice-service:8000
     networks:
       - nucleus-network
@@ -47,7 +47,7 @@ services:
     networks:
       - nucleus-network
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/nucleus
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/nucleus}
     command: ["node", "scripts/seed.js"]
     depends_on:
       mongodb:
