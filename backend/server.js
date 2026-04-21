@@ -12,6 +12,7 @@ const timetableRoutes = require('./routes/timetableRoutes');
 const resultRoutes = require('./routes/resultRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const hostelRoutes = require('./routes/hostelRoutes');
 
 const app = express();
 
@@ -32,11 +33,22 @@ app.use('/api/timetable', timetableRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/hostel', hostelRoutes);
 
 // Root Endpoint
-app.get('/', (req, res) => {
-    res.send('Nucleus Student Portal API is running!');
+// 404 Handler
+app.use((req, res, next) => {
+    res.status(404).json({ message: `Route ${req.originalUrl} not found on this server` });
 });
 
-const PORT = process.env.PORT || 5001; // Changed from 5000 to avoid conflict
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(err.status || 500).json({
+        message: err.message || 'An internal server error occurred',
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    });
+});
+
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`Nucleus API Server running on port ${PORT}`));

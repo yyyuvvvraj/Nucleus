@@ -31,25 +31,6 @@ const Layout = () => {
               <input className="w-full bg-surface-container-low border-none rounded-sm py-2 pl-10 text-sm focus:ring-2 focus:ring-secondary transition-all" placeholder="Search courses, results, or resources..." type="text"/>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-all duration-200">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
-            <div className="flex items-center gap-3 pl-2">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">{userName}</span>
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-bold">{initials}</span>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Sign out"
-              className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200"
-            >
-              <span className="material-symbols-outlined">logout</span>
-            </button>
-          </div>
         </header>
         <div className="flex-1">
           <Outlet />

@@ -89,17 +89,8 @@ const checkCredentials = async (req, res) => {
             }
 
             // ── CHALLENGE GENERATION ──
-            const VOICE_CHALLENGES = [
-                "The sun rises in the east every morning.",
-                "Artificial intelligence is transforming our world.",
-                "Education is the most powerful weapon we can use.",
-                "The quick brown fox jumps over the lazy dog.",
-                "Programming requires patience and logical thinking."
-            ];
-            const FACE_CHALLENGES = ["blink", "look_left", "look_right"];
-            
-            const selectedVoice = VOICE_CHALLENGES[Math.floor(Math.random() * VOICE_CHALLENGES.length)];
-            const selectedFace = FACE_CHALLENGES[Math.floor(Math.random() * FACE_CHALLENGES.length)];
+            const FIXED_VOICE_PASSPHRASE = "My voice is my secure identity in the Nucleus Portal";
+            const selectedVoice = FIXED_VOICE_PASSPHRASE;
 
             // Temp token — expires in 5 minutes, scoped to multi-factor check stage
             const tempToken = jwt.sign(
@@ -107,7 +98,7 @@ const checkCredentials = async (req, res) => {
                     id: user._id, 
                     stage: 'multi_factor',
                     voiceChallenge: selectedVoice,
-                    faceChallenge: selectedFace
+                    // faceChallenge removed as liveness check is no longer randomized/required
                 },
                 process.env.JWT_SECRET || 'secret',
                 { expiresIn: '10m' }
@@ -119,7 +110,7 @@ const checkCredentials = async (req, res) => {
                 twoFactorEnabled: user.isTwoFactorEnabled || false,
                 challenges: {
                     voice: selectedVoice,
-                    face: selectedFace
+                    face: null // Explicitly null to signify no interactive challenge
                 },
                 user: {
                     _id: user._id,

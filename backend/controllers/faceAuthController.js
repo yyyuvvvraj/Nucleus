@@ -94,10 +94,7 @@ const faceLoginVerify = async (req, res) => {
         // Pass flat embedding vector — Python endpoint expects 'stored_embedding' (singular)
         formData.append('stored_embedding', JSON.stringify(user.face_embeddings));
         
-        // Pass the expected action for liveness detection
-        if (req.user.faceChallenge) {
-            formData.append('expected_action', req.user.faceChallenge);
-        }
+        // faceChallenge/expected_action removed to focus purely on image capture match
 
         const result = await callFaceService('/face/verify', formData);
 

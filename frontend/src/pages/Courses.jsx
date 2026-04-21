@@ -11,45 +11,15 @@ export default function Courses() {
     const token = localStorage.getItem('nucleusToken');
     if (!token) return;
 
-    // Fetch timetable and results to aggregate into a single unified course listing
-    Promise.all([
-      fetch(`${API_BASE_URL}/api/timetable`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`${API_BASE_URL}/api/results`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`${API_BASE_URL}/api/attendance`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json())
-    ])
-    .then(([timetableItems, resultsData, attendanceData]) => {
-       const mapped = {};
-       
-       // Process timetable references for faculty binding
-       if(Array.isArray(timetableItems)){
-         timetableItems.forEach(t => {
-           if(!mapped[t.subject]) mapped[t.subject] = { title: t.subject, code: `CS${t._id ? t._id.toString().slice(-3).toUpperCase() : '101'}` };
-           mapped[t.subject].faculty = t.faculty;
-           mapped[t.subject].department = `${t.semester}th Sem ${t.branch}`;
-         });
-       }
-
-       // Map results logic
-       if(Array.isArray(resultsData)){
-         resultsData.forEach(r => {
-           if(!mapped[r.subject]) mapped[r.subject] = { title: r.subject, code: 'NA' };
-           mapped[r.subject].credits = r.credits;
-           mapped[r.subject].grade = r.grade;
-           mapped[r.subject].marks = r.marks;
-         });
-       }
-
-       // Map attendance
-       if(Array.isArray(attendanceData)){
-         attendanceData.forEach(a => {
-           if(!mapped[a.subject_name]) mapped[a.subject_name] = { title: a.subject_name, code: 'NA' };
-           mapped[a.subject_name].total_classes = a.total_classes;
-           mapped[a.subject_name].attended_classes = a.attended_classes;
-           mapped[a.subject_name].attendance_percent = ((a.attended_classes / (a.total_classes||1)) * 100).toFixed(0);
-         });
-       }
-
-       setCourses(Object.values(mapped));
+    // Fetch from the new centralized Course management API
+    fetch(`${API_BASE_URL}/api/admin/courses`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Merge with student-specific session data if needed, 
+      // but for now we'll show the assigned course list.
+      setCourses(Array.isArray(data) ? data : []);
     })
     .catch(console.error)
     .finally(() => setLoading(false));
@@ -89,46 +59,30 @@ export default function Courses() {
                       </span>
                   )}
                 </div>
-                <h3 className="text-xl font-bold text-on-surface leading-snug mb-1">{course.title}</h3>
+                <h3 className="text-xl font-bold text-on-surface leading-snug mb-1">{course.name}</h3>
                 <p className="text-sm text-on-surface-variant flex items-center gap-2">
-                  <Users size={14} /> {course.faculty || 'Faculty Unassigned'}
+                  <span className="material-symbols-outlined text-sm">person</span> {course.faculty || 'Faculty Unassigned'}
                 </p>
               </div>
 
               <div className="p-6 bg-surface-container-low/30 space-y-4 flex-1">
-                {course.grade && (
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2 text-on-surface-variant">
-                      <Activity size={16} /> Latest Grade
-                    </div>
-                    <span className="font-bold text-primary">{course.grade} ({course.marks} marks)</span>
+                <div className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-2 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-sm">school</span> Department
                   </div>
-                )}
+                  <span className="font-bold text-primary">{course.branch}</span>
+                </div>
                 
-                {course.attendance_percent && (
-                  <div>
-                    <div className="flex justify-between items-center text-sm mb-2">
-                       <div className="flex items-center gap-2 text-on-surface-variant">
-                        <Percent size={16} /> Attendance
-                       </div>
-                       <span className="font-bold text-on-surface">{course.attendance_percent}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                       <div className="h-full bg-blue-500 rounded-full" style={{ width: `${course.attendance_percent}%` }}></div>
-                    </div>
+                <div className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-2 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-sm">calendar_today</span> Semester
                   </div>
-                )}
-                
-                {course.department && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-on-surface-variant">Class</span>
-                    <span className="font-mono text-xs">{course.department}</span>
-                  </div>
-                )}
+                  <span className="font-bold text-on-surface">Sem {course.semester}</span>
+                </div>
               </div>
 
               <button className="w-full flex items-center justify-center gap-2 py-4 border-t border-outline-variant/10 text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
-                View Syllabus <ChevronRight size={16} />
+                View Details <span className="material-symbols-outlined text-sm">chevron_right</span>
               </button>
             </div>
           ))}

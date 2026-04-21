@@ -25,7 +25,12 @@ const userSchema = new mongoose.Schema({
     face_updated_at: { type: Date },
     // Multi-factor authentication
     twoFactorSecret: { type: String },
-    isTwoFactorEnabled: { type: Boolean, default: false }
+    isTwoFactorEnabled: { type: Boolean, default: false },
+    // Hostel details (for students)
+    hostelBlock: { type: String },
+    roomNumber: { type: String },
+    hostelFeePaid: { type: Boolean, default: false },
+    messFeePaid: { type: Boolean, default: false }
 }, {
     timestamps: true
 });

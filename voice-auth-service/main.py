@@ -249,9 +249,9 @@ async def verify_face(
         threshold = 0.70   # Slightly relaxed from 0.75 to handle lighting/angle variation
         is_authenticated = similarity >= threshold
 
-        # Liveness check
+        # Liveness check (optional — skipped if no expected_action provided)
         liveness_verified = True
-        liveness_msg = ""
+        liveness_msg = "Liveness check skipped (no challenge)"
         if expected_action:
             liveness_verified, liveness_msg = verify_liveness_action(content, expected_action)
             if not liveness_verified:
@@ -265,7 +265,7 @@ async def verify_face(
             "threshold_used": threshold,
             "liveness_verified": liveness_verified,
             "liveness_message": liveness_msg,
-            "expected_action": expected_action
+            "expected_action": expected_action or "none"
         }
     except HTTPException:
         raise
