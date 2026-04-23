@@ -1,11 +1,10 @@
 const qrcode = require('qrcode');
 const User = require('../models/User');
-const otplib = require('otplib');
+const speakeasy = require('speakeasy');
 
 /**
- * MFA Controller - Optimized for otplib v13.4.0 (Object-based Async API)
- * Based on inspection: otplib exports verify, generateSecret, generateURI directly.
- * Methods expect { token, secret } object signature.
+ * MFA Controller - Using speakeasy (pure CommonJS, Vercel-compatible)
+ * Replaces otplib which has ESM compatibility issues on Vercel Serverless.
  */
 
 const setup2FA = async (req, res) => {
@@ -14,23 +13,13 @@ const setup2FA = async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         // Generate secret
-        const secret = otplib.generateSecret();
+        const secretObj = speakeasy.generateSecret({
+            name: `Nucleus Portal:${user.email}`,
+            issuer: 'Nucleus Portal'
+        });
 
-        // Construct otpauth URI using generateURI (v13 style)
-        let otpauth;
-        try {
-            if (typeof otplib.generateURI === 'function') {
-                otpauth = otplib.generateURI({
-                    secret,
-                    label: user.email,
-                    issuer: 'Nucleus Portal'
-                });
-            } else {
-                otpauth = `otpauth://totp/Nucleus%20Portal:${user.email}?secret=${secret}&issuer=Nucleus%20Portal`;
-            }
-        } catch (e) {
-            otpauth = `otpauth://totp/Nucleus%20Portal:${user.email}?secret=${secret}&issuer=Nucleus%20Portal`;
-        }
+        const secret = secretObj.base32;
+        const otpauth = secretObj.otpauth_url;
         
         const qrDataURL = await qrcode.toDataURL(otpauth);
         
@@ -58,33 +47,15 @@ const verifyAndEnable2FA = async (req, res) => {
             return res.status(400).json({ success: false, message: 'MFA setup not found. Please restart setup.' });
         }
 
-        let isValid = false;
         const sanitizedToken = String(token).trim();
         const sanitizedSecret = String(user.twoFactorSecret).trim();
 
-        try {
-            // otplib v13: verify({ token, secret, window }) returns { valid: boolean }
-            // We use await as it can be async depending on crypto plugin
-            const result = await otplib.verify({ 
-                token: sanitizedToken, 
-                secret: sanitizedSecret,
-                window: 2 
-            });
-            
-            isValid = result && result.valid === true;
-            
-            if (!isValid) {
-                // Try sync fallback just in case
-                const resSync = otplib.verifySync({ 
-                    token: sanitizedToken, 
-                    secret: sanitizedSecret,
-                    window: 2
-                });
-                isValid = resSync && resSync.valid === true;
-            }
-        } catch (err) {
-            console.error('MFA Verification Error:', err.message);
-        }
+        const isValid = speakeasy.totp.verify({
+            secret: sanitizedSecret,
+            encoding: 'base32',
+            token: sanitizedToken,
+            window: 2
+        });
 
         if (isValid) {
             user.isTwoFactorEnabled = true;
@@ -123,29 +94,15 @@ const validate2FALogin = async (req, res) => {
             return res.status(400).json({ message: '2FA not properly configured for this user' });
         }
 
-        let isValid = false;
         const sanitizedToken = String(token).trim();
         const sanitizedSecret = String(user.twoFactorSecret).trim();
 
-        try {
-            const result = await otplib.verify({ 
-                token: sanitizedToken, 
-                secret: sanitizedSecret,
-                window: 2
-            });
-            isValid = result && result.valid === true;
-            
-            if (!isValid) {
-                const resSync = otplib.verifySync({ 
-                    token: sanitizedToken, 
-                    secret: sanitizedSecret,
-                    window: 2
-                });
-                isValid = resSync && resSync.valid === true;
-            }
-        } catch (err) {
-            console.error('MFA Login Verification Error:', err.message);
-        }
+        const isValid = speakeasy.totp.verify({
+            secret: sanitizedSecret,
+            encoding: 'base32',
+            token: sanitizedToken,
+            window: 2
+        });
 
         if (isValid) {
             const jwt = require('jsonwebtoken');
