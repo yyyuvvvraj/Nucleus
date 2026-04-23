@@ -55,4 +55,8 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Nucleus API Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'production' || process.env.RENDER) {
+    app.listen(PORT, () => console.log(`Nucleus API Server running on port ${PORT}`));
+}
+
+module.exports = app;
