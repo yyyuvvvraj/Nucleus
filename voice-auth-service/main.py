@@ -26,6 +26,11 @@ app.add_middleware(
 db_embeddings = {}
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "voice-service"}
+
+
 def calculate_adaptive_threshold(embeddings_list):
     """
     Compute a conservative similarity threshold from enrollment samples.

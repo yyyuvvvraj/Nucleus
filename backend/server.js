@@ -25,6 +25,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 connectDB();
 
 // Routes
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', service: 'backend' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/voice', voiceAuthRoutes);
 app.use('/api/auth/face', faceAuthRoutes);
