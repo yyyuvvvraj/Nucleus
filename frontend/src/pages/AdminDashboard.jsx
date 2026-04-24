@@ -6,40 +6,40 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 // ── Role-specific nav definitions ──
 const NAV_BY_ROLE = {
   admin: [
-    { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
-    { name: 'Add Student',    tab: 'add_student',  icon: 'person_add' },
-    { name: 'Student List',   tab: 'students',     icon: 'group' },
-    { name: 'Grade Entry',    tab: 'results',      icon: 'grade' },
-    { name: 'Attendance',     tab: 'attendance',   icon: 'event_available' },
-    { name: 'Timetable',      tab: 'timetable',    icon: 'calendar_month' },
-    { name: 'Hostel',         tab: 'hostel',       icon: 'hotel' },
-    { name: 'Courses',        tab: 'courses',      icon: 'school' },
-    { name: 'Mess Menu',      tab: 'mess_menu',    icon: 'restaurant' },
-    { name: 'Security',       tab: 'security',     icon: 'security' },
+    { name: 'Shlok', tab: 'overview', icon: 'dashboard' },
+    { name: 'Add Student', tab: 'add_student', icon: 'person_add' },
+    { name: 'Student List', tab: 'students', icon: 'group' },
+    { name: 'Grade Entry', tab: 'results', icon: 'grade' },
+    { name: 'Attendance', tab: 'attendance', icon: 'event_available' },
+    { name: 'Timetable', tab: 'timetable', icon: 'calendar_month' },
+    { name: 'Hostel', tab: 'hostel', icon: 'hotel' },
+    { name: 'Courses', tab: 'courses', icon: 'school' },
+    { name: 'Mess Menu', tab: 'mess_menu', icon: 'restaurant' },
+    { name: 'Security', tab: 'security', icon: 'security' },
   ],
   director: [
-    { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
-    { name: 'Student List',   tab: 'students',     icon: 'group' },
-    { name: 'Timetable',      tab: 'timetable',    icon: 'calendar_month' },
-    { name: 'Security',       tab: 'security',     icon: 'security' },
+    { name: 'Overview', tab: 'overview', icon: 'dashboard' },
+    { name: 'Student List', tab: 'students', icon: 'group' },
+    { name: 'Timetable', tab: 'timetable', icon: 'calendar_month' },
+    { name: 'Security', tab: 'security', icon: 'security' },
   ],
   recruiter: [
-    { name: 'Add Student',    tab: 'add_student',  icon: 'person_add' },
-    { name: 'Student List',   tab: 'students',     icon: 'group' },
-    { name: 'Security',       tab: 'security',     icon: 'security' },
+    { name: 'Add Student', tab: 'add_student', icon: 'person_add' },
+    { name: 'Student List', tab: 'students', icon: 'group' },
+    { name: 'Security', tab: 'security', icon: 'security' },
   ],
   faculty: [
-    { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
-    { name: 'Student List',   tab: 'students',     icon: 'group' },
-    { name: 'Grade Entry',    tab: 'results',      icon: 'grade' },
-    { name: 'Attendance',     tab: 'attendance',   icon: 'event_available' },
-    { name: 'Security',       tab: 'security',     icon: 'security' },
+    { name: 'Overview', tab: 'overview', icon: 'dashboard' },
+    { name: 'Student List', tab: 'students', icon: 'group' },
+    { name: 'Grade Entry', tab: 'results', icon: 'grade' },
+    { name: 'Attendance', tab: 'attendance', icon: 'event_available' },
+    { name: 'Security', tab: 'security', icon: 'security' },
   ],
   warden: [
-    { name: 'Overview',       tab: 'overview',     icon: 'dashboard' },
-    { name: 'Student List',   tab: 'students',     icon: 'group' },
-    { name: 'Hostel',         tab: 'hostel',       icon: 'hotel' },
-    { name: 'Security',       tab: 'security',     icon: 'security' },
+    { name: 'Overview', tab: 'overview', icon: 'dashboard' },
+    { name: 'Student List', tab: 'students', icon: 'group' },
+    { name: 'Hostel', tab: 'hostel', icon: 'hotel' },
+    { name: 'Security', tab: 'security', icon: 'security' },
   ],
 };
 
@@ -127,7 +127,7 @@ export default function RoleDashboard() {
     const firstName = parts[0].toLowerCase();
     const lastName = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
     const yearSuffix = genBatch.slice(-2);
-    
+
     let generatedEmail = '';
     if (lastName) {
       generatedEmail = `${lastName}.${firstName}${yearSuffix}@st.niituniversity.in`;
@@ -389,9 +389,9 @@ export default function RoleDashboard() {
         const d = await res.json();
         showError(d.message || 'Update failed');
       }
-    } catch (err) { 
+    } catch (err) {
       console.error('Mess Update Error:', err);
-      showError('Network error: ' + err.message); 
+      showError('Network error: ' + err.message);
     }
   };
 
@@ -412,9 +412,9 @@ export default function RoleDashboard() {
         const d = await res.json();
         showError(d.message || 'Assignment failed');
       }
-    } catch (err) { 
+    } catch (err) {
       console.error('Hostel Update Error:', err);
-      showError('Network error: ' + err.message); 
+      showError('Network error: ' + err.message);
     }
   };
 
@@ -652,7 +652,7 @@ export default function RoleDashboard() {
                     <div>
                       <label className={labelCls}>Semester</label>
                       <select className={fieldCls} value={genSemester} onChange={e => setGenSemester(e.target.value)} required>
-                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                       </select>
                     </div>
                   </div>
@@ -698,7 +698,7 @@ export default function RoleDashboard() {
                     <label className={labelCls}>Semester</label>
                     <select className={fieldCls} value={filterSemester} onChange={e => setFilterSemester(e.target.value)}>
                       <option value="">All Semesters</option>
-                      {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                     </select>
                   </div>
                   <div>
@@ -754,14 +754,14 @@ export default function RoleDashboard() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => handleReset2FA(s._id)}
                               className="p-1.5 text-amber-600 hover:bg-amber-500/10 rounded-lg transition-colors"
                               title="Reset 2FA"
                             >
                               <span className="material-symbols-outlined text-sm">lock_reset</span>
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleResetRegistration(s._id)}
                               className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                               title="Reset Full Registration"
@@ -887,8 +887,8 @@ export default function RoleDashboard() {
                               <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{s.enrollment_number}</td>
                               <td className="px-6 py-4 text-center">
                                 <label className="relative inline-flex items-center cursor-pointer">
-                                  <input 
-                                    type="checkbox" 
+                                  <input
+                                    type="checkbox"
                                     className="sr-only peer"
                                     checked={attStatusMap[s._id] || false}
                                     onChange={(e) => {
@@ -932,7 +932,7 @@ export default function RoleDashboard() {
                     <div>
                       <label className={labelCls}>Semester</label>
                       <select className={fieldCls} value={timeSemester} onChange={e => setTimeSemester(e.target.value)} required>
-                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                       </select>
                     </div>
                   </div>
@@ -940,7 +940,7 @@ export default function RoleDashboard() {
                     <div>
                       <label className={labelCls}>Day</label>
                       <select className={fieldCls} value={timeDay} onChange={e => setTimeDay(e.target.value)} required>
-                        {['Monday','Tuesday','Wednesday','Thursday','Friday'].map(d => <option key={d}>{d}</option>)}
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(d => <option key={d}>{d}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1004,15 +1004,15 @@ export default function RoleDashboard() {
                               <code className="text-sm bg-surface-container px-3 py-1 rounded font-mono">{mfaSecret}</code>
                             </div>
                           </div>
-                          
+
                           <div className="space-y-3">
                             <label className={labelCls}>Verification Code</label>
-                            <input 
-                              type="text" 
-                              className={fieldCls} 
-                              placeholder="000 000" 
+                            <input
+                              type="text"
+                              className={fieldCls}
+                              placeholder="000 000"
                               value={mfaToken}
-                              onChange={e => setMfaToken(e.target.value.replace(/\D/g,'').slice(0,6))}
+                              onChange={e => setMfaToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
                             />
                             <button onClick={confirm2FA} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg">
                               Verify & Enable
@@ -1064,7 +1064,7 @@ export default function RoleDashboard() {
                     <form onSubmit={submitHostelAssignment} className="space-y-4">
                       <div>
                         <label className={labelCls}>Select Student</label>
-                        <select className={fieldCls} value={hostelAssignment.userId} onChange={e => setHostelAssignment({...hostelAssignment, userId: e.target.value})} required>
+                        <select className={fieldCls} value={hostelAssignment.userId} onChange={e => setHostelAssignment({ ...hostelAssignment, userId: e.target.value })} required>
                           <option value="">— Choose Student —</option>
                           {allStudents.map(s => <option key={s._id} value={s._id}>{s.name} ({s.enrollment_number})</option>)}
                         </select>
@@ -1072,20 +1072,20 @@ export default function RoleDashboard() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className={labelCls}>Block</label>
-                          <input type="text" className={fieldCls} value={hostelAssignment.hostelBlock} onChange={e => setHostelAssignment({...hostelAssignment, hostelBlock: e.target.value})} placeholder="e.g. Ganga" required />
+                          <input type="text" className={fieldCls} value={hostelAssignment.hostelBlock} onChange={e => setHostelAssignment({ ...hostelAssignment, hostelBlock: e.target.value })} placeholder="e.g. Ganga" required />
                         </div>
                         <div>
                           <label className={labelCls}>Room No.</label>
-                          <input type="text" className={fieldCls} value={hostelAssignment.roomNumber} onChange={e => setHostelAssignment({...hostelAssignment, roomNumber: e.target.value})} placeholder="e.g. 402-B" required />
+                          <input type="text" className={fieldCls} value={hostelAssignment.roomNumber} onChange={e => setHostelAssignment({ ...hostelAssignment, roomNumber: e.target.value })} placeholder="e.g. 402-B" required />
                         </div>
                       </div>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={hostelAssignment.hostelFeePaid} onChange={e => setHostelAssignment({...hostelAssignment, hostelFeePaid: e.target.checked})} className="rounded text-blue-600" />
+                          <input type="checkbox" checked={hostelAssignment.hostelFeePaid} onChange={e => setHostelAssignment({ ...hostelAssignment, hostelFeePaid: e.target.checked })} className="rounded text-blue-600" />
                           <span className="text-sm text-on-surface-variant">Hostel Fee Paid</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={hostelAssignment.messFeePaid} onChange={e => setHostelAssignment({...hostelAssignment, messFeePaid: e.target.checked})} className="rounded text-blue-600" />
+                          <input type="checkbox" checked={hostelAssignment.messFeePaid} onChange={e => setHostelAssignment({ ...hostelAssignment, messFeePaid: e.target.checked })} className="rounded text-blue-600" />
                           <span className="text-sm text-on-surface-variant">Mess Fee Paid</span>
                         </label>
                       </div>
@@ -1150,34 +1150,34 @@ export default function RoleDashboard() {
                     <form onSubmit={submitCourse} className="space-y-4">
                       <div>
                         <label className={labelCls}>Course Name</label>
-                        <input type="text" className={fieldCls} value={newCourse.name} onChange={e => setNewCourse({...newCourse, name: e.target.value})} placeholder="e.g. Data Structures" required />
+                        <input type="text" className={fieldCls} value={newCourse.name} onChange={e => setNewCourse({ ...newCourse, name: e.target.value })} placeholder="e.g. Data Structures" required />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className={labelCls}>Course Code</label>
-                          <input type="text" className={fieldCls} value={newCourse.code} onChange={e => setNewCourse({...newCourse, code: e.target.value})} placeholder="CS101" required />
+                          <input type="text" className={fieldCls} value={newCourse.code} onChange={e => setNewCourse({ ...newCourse, code: e.target.value })} placeholder="CS101" required />
                         </div>
                         <div>
                           <label className={labelCls}>Credits</label>
-                          <input type="number" className={fieldCls} value={newCourse.credits} onChange={e => setNewCourse({...newCourse, credits: Number(e.target.value)})} required />
+                          <input type="number" className={fieldCls} value={newCourse.credits} onChange={e => setNewCourse({ ...newCourse, credits: Number(e.target.value) })} required />
                         </div>
                       </div>
                       <div>
                         <label className={labelCls}>Faculty Name</label>
-                        <input type="text" className={fieldCls} value={newCourse.faculty} onChange={e => setNewCourse({...newCourse, faculty: e.target.value})} placeholder="Dr. Jane Doe" required />
+                        <input type="text" className={fieldCls} value={newCourse.faculty} onChange={e => setNewCourse({ ...newCourse, faculty: e.target.value })} placeholder="Dr. Jane Doe" required />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className={labelCls}>Branch</label>
-                          <select className={fieldCls} value={newCourse.branch} onChange={e => setNewCourse({...newCourse, branch: e.target.value})}>
+                          <select className={fieldCls} value={newCourse.branch} onChange={e => setNewCourse({ ...newCourse, branch: e.target.value })}>
                             <option value="CSE">CSE</option>
                             <option value="IMBA">IMBA</option>
                           </select>
                         </div>
                         <div>
                           <label className={labelCls}>Semester</label>
-                          <select className={fieldCls} value={newCourse.semester} onChange={e => setNewCourse({...newCourse, semester: Number(e.target.value)})}>
-                            {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                          <select className={fieldCls} value={newCourse.semester} onChange={e => setNewCourse({ ...newCourse, semester: Number(e.target.value) })}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
                           </select>
                         </div>
                       </div>
@@ -1228,32 +1228,32 @@ export default function RoleDashboard() {
                   <form onSubmit={submitMessUpdate} className="space-y-4">
                     <div>
                       <label className={labelCls}>Select Day</label>
-                      <select className={fieldCls} value={editMenu.day} onChange={e => setEditMenu({...editMenu, day: e.target.value})}>
+                      <select className={fieldCls} value={editMenu.day} onChange={e => setEditMenu({ ...editMenu, day: e.target.value })}>
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => <option key={d}>{d}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className={labelCls}>Breakfast</label>
-                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.breakfast} onChange={e => setEditMenu({...editMenu, breakfast: e.target.value})} placeholder="e.g. Idli Sambhar" required />
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.breakfast} onChange={e => setEditMenu({ ...editMenu, breakfast: e.target.value })} placeholder="e.g. Idli Sambhar" required />
                     </div>
                     <div>
                       <label className={labelCls}>Lunch</label>
-                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.lunch} onChange={e => setEditMenu({...editMenu, lunch: e.target.value})} placeholder="e.g. Paneer Butter Masala" required />
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.lunch} onChange={e => setEditMenu({ ...editMenu, lunch: e.target.value })} placeholder="e.g. Paneer Butter Masala" required />
                     </div>
                     <div>
                       <label className={labelCls}>Dinner</label>
-                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.dinner} onChange={e => setEditMenu({...editMenu, dinner: e.target.value})} placeholder="e.g. Mutton Curry" required />
+                      <textarea className={fieldCls + ' h-20 resize-none'} value={editMenu.dinner} onChange={e => setEditMenu({ ...editMenu, dinner: e.target.value })} placeholder="e.g. Mutton Curry" required />
                     </div>
                     <div>
                       <label className={labelCls}>Special Dish (Optional)</label>
-                      <input type="text" className={fieldCls} value={editMenu.special} onChange={e => setEditMenu({...editMenu, special: e.target.value})} placeholder="e.g. Classic Lasagna" />
+                      <input type="text" className={fieldCls} value={editMenu.special} onChange={e => setEditMenu({ ...editMenu, special: e.target.value })} placeholder="e.g. Classic Lasagna" />
                     </div>
                     <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors">Push Update</button>
                   </form>
                 </div>
 
                 <div className="md:col-span-2 space-y-4">
-                  {menuItems.sort((a,b) => {
+                  {menuItems.sort((a, b) => {
                     const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
                     return order.indexOf(a.day) - order.indexOf(b.day);
                   }).map(item => (
